@@ -6,10 +6,12 @@ export function UserInfo({
     user,
     showEmail = false,
 }: {
-    user: User;
+    user: User | null;
     showEmail?: boolean;
 }) {
     const getInitials = useInitials();
+
+    if (!user) return null;
 
     return (
         <>

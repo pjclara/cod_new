@@ -13,10 +13,11 @@ import { edit } from '@/routes/profile';
 import type { User } from '@/types';
 
 type Props = {
-    user: User;
+    user: User | null;
 };
 
 export function UserMenuContent({ user }: Props) {
+    if (!user) return null;
     const cleanup = useMobileNavigation();
 
     const handleLogout = () => {
