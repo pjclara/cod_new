@@ -78,6 +78,12 @@ export default function Icd10PcsListPage({ subspecialtyId }: Props) {
         }, 350);
     };
 
+    useEffect(() => {
+        const q = new URLSearchParams(window.location.search).get('q');
+        if (q) handleSearch(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const handleAxisChange = (index: number, value: string) => {
         setAxisSelections((prev) => {
             const next = [...prev];
@@ -101,7 +107,7 @@ export default function Icd10PcsListPage({ subspecialtyId }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="ICD-10-PCS — Procedimentos" />
-            <div className="flex flex-col gap-4 p-6">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 {/* Header */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>

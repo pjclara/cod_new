@@ -12,7 +12,7 @@ export default function IcdHomePage({ stats }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="ICD-10 — Nomenclatura" />
-            <div className="flex flex-col gap-6 p-6">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 {/* Hero */}
                 <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-8">
                     <h1 className="text-3xl font-bold tracking-tight">Nomenclatura ICD-10</h1>

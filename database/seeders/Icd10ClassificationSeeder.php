@@ -300,144 +300,179 @@ class Icd10ClassificationSeeder extends Seeder
 
     private function pcsRules(): array
     {
+        // Descrições PCS estão em português com formato:
+        // "Secção -> Sistema corporal -> Operação raiz -> Parte do corpo -> Acesso -> Dispositivo -> Qualificador"
+        // Regras ordenadas do mais específico para o geral; códigos já atribuídos ficam excluídos (whereNull).
         return [
-            'congenital-heart-disease' => [
-                'description_keywords' => ['atrial septal', 'ventricular septal', 'tetralogy', 'congenital heart', 'great vessel'],
-            ],
-            'valvular-heart-disease' => [
-                'description_keywords' => ['aortic valve', 'mitral valve', 'tricuspid valve', 'pulmonary valve', 'annuloplasty', 'valve replacement', 'valve repair'],
+            // ── CARDIOLOGIA ──────────────────────────────────────────────────
+            'ischemic-heart-disease' => [
+                'code_prefixes' => ['021', '027'],       // Bypass e Dilatação artéria coronária
+                'description_keywords' => ['coronária'],
             ],
             'arrhythmias' => [
-                'description_keywords' => ['pacemaker', 'defibrillator', 'cardioversion', 'electrophysiolog', 'cardiac lead', 'ablation cardiac'],
+                'code_prefixes' => ['02H', '02K', '0JH', '5A2'], // Inserção leads/gerador, mapeamento, cardioversão
+                'description_keywords' => ['marcapasso', 'desfibrilhador'],
+            ],
+            'valvular-heart-disease' => [
+                'code_prefixes' => ['02R', '02Q', '02U'], // Substituição/reparação/suplemento de válvulas
+                'description_keywords' => ['válvula aórtica', 'válvula mitral', 'válvula tricúspide', 'válvula pulmonar'],
             ],
             'heart-failure' => [
-                'description_keywords' => ['ventricular assist', 'heart transplant', 'cardiac resynchronization', 'intra-aortic balloon'],
+                'code_prefixes' => ['02Y', '5A0'],        // Transplante cardíaco, assistência extracorporal
+                'description_keywords' => ['ventrículo assistido', 'coração artificial', 'balão intra-aórtico'],
             ],
-            'ischemic-heart-disease' => [
-                'description_keywords' => ['coronary artery', 'coronary bypass', 'angioplasty', 'stent', 'myocardial revascular'],
+            'congenital-heart-disease' => [
+                'code_prefixes' => ['02'],               // Restantes procedimentos cardíacos/grandes vasos
+                'description_keywords' => ['septal', 'tetralogia', 'congénit', 'grandes vasos'],
             ],
+
+            // ── NEUROLOGIA / NEUROCIRURGIA ────────────────────────────────
             'cerebrovascular-disease' => [
-                'description_keywords' => ['cerebral artery', 'intracranial artery', 'carotid artery', 'thrombectomy', 'embolization cerebral'],
+                'code_prefixes' => ['031', '037', '03C', '03L'],  // Artérias superiores (carótida, cerebral, basilar)
+                'description_keywords' => ['artéria carótida', 'artéria cerebral', 'artéria basilar', 'artéria vertebral', 'aneurisma'],
             ],
             'epilepsy' => [
-                'description_keywords' => ['vagus nerve stimulation', 'epilep', 'seizure'],
+                'description_keywords' => ['nervo vago'],
             ],
             'movement-disorders' => [
-                'description_keywords' => ['deep brain stimulation', 'basal ganglia', 'thalamotomy', 'parkinson'],
+                'description_keywords' => ['estimulação cerebral profunda', 'tálamo', 'globo pálido', 'subtálamo'],
             ],
             'peripheral-neuropathy' => [
-                'description_keywords' => ['peripheral nerve', 'median nerve', 'ulnar nerve', 'radial nerve', 'carpal tunnel'],
-            ],
-            'pediatric-orthopedics' => [
-                'description_keywords' => ['clubfoot', 'developmental dysplasia', 'congenital dislocation'],
-            ],
-            'trauma-and-fractures' => [
-                'description_keywords' => ['fracture', 'reposition', 'external fixation', 'internal fixation', 'cast'],
-            ],
-            'sports-medicine' => [
-                'description_keywords' => ['anterior cruciate ligament', 'posterior cruciate ligament', 'meniscus', 'rotator cuff', 'labrum', 'ligament repair'],
-            ],
-            'joint-replacement' => [
-                'description_keywords' => ['hip replacement', 'knee replacement', 'shoulder replacement', 'arthroplasty'],
+                'code_prefixes' => ['01B', '01N', '018'], // Excisão/libertação/divisão nervoso periférico
+                'description_keywords' => ['nervo mediano', 'nervo ulnar', 'nervo radial', 'canal cárpico', 'nervo ciático', 'plexo braquial'],
             ],
             'spine-disorders' => [
-                'description_keywords' => ['spinal fusion', 'vertebral', 'laminectomy', 'discectomy', 'intervertebral disc', 'spinal canal'],
+                'code_prefixes' => ['0RG', '0SG'],        // Fusão articulações superiores/inferiores (coluna)
+                'description_keywords' => ['coluna vertebral', 'vértebra', 'disco intervertebral', 'canal medular', 'laminecto', 'discecto'],
             ],
-            'inflammatory-bowel-disease' => [
-                'description_keywords' => ['ileostomy', 'proctocolectomy', 'ileal pouch', 'crohn', 'ulcerative colitis'],
+
+            // ── ORTOPEDIA ────────────────────────────────────────────────
+            'joint-replacement' => [
+                'code_prefixes' => ['0RR', '0SR'],        // Substituição articulações superiores e inferiores
             ],
-            'pancreatic-disease' => [
-                'description_keywords' => ['pancreas', 'pancreatic', 'pancreatectomy'],
+            'trauma-and-fractures' => [
+                'code_prefixes' => ['0NS', '0PS', '0QS', '0RS', '0SS'], // Reposicionamento de ossos e articulações
+                'description_keywords' => ['fixação externa', 'fixação interna', 'reposicionamento'],
             ],
-            'liver-disease' => [
-                'description_keywords' => ['hepatic', 'liver transplant', 'liver biopsy', 'hepatectomy'],
+            'sports-medicine' => [
+                'description_keywords' => ['ligamento cruzado', 'menisco', 'manguito rotador', 'labrum', 'ligamento colateral'],
             ],
-            'upper-gi' => [
-                'description_keywords' => ['esophagus', 'stomach', 'duodenum', 'gastrostomy', 'esophagectomy', 'gastrectomy'],
+            'pediatric-orthopedics' => [
+                'description_keywords' => ['displasia da anca', 'displasia coxofemoral', 'pé equinovaro', 'escoliose congénita'],
             ],
-            'colorectal' => [
-                'description_keywords' => ['colon', 'rectum', 'sigmoid', 'colostomy', 'proctectomy', 'anus'],
-            ],
-            'sleep-disorders' => [
-                'description_keywords' => ['sleep apnea', 'hypoglossal nerve stimulation', 'tracheostomy'],
-            ],
-            'pleural-disease' => [
-                'description_keywords' => ['pleura', 'pleural', 'thoracentesis'],
-            ],
-            'interstitial-lung-disease' => [
-                'description_keywords' => ['pulmonary fibrosis', 'lung biopsy', 'alveolar'],
-            ],
-            'obstructive-lung-disease' => [
-                'description_keywords' => ['bronchus', 'bronchial', 'lung volume reduction', 'tracheobronchial'],
-            ],
-            'pulmonary-hypertension' => [
-                'description_keywords' => ['pulmonary artery', 'right heart catheter'],
-            ],
-            'diabetes' => [
-                'description_keywords' => ['insulin pump', 'pancreatic islet'],
-            ],
-            'thyroid-disorders' => [
-                'description_keywords' => ['thyroidectomy', 'thyroid'],
-            ],
-            'adrenal-disorders' => [
-                'description_keywords' => ['adrenalectomy', 'adrenal gland'],
-            ],
-            'pituitary-disorders' => [
-                'description_keywords' => ['pituitary', 'hypophysis'],
-            ],
-            'metabolic-bone-disease' => [
-                'description_keywords' => ['parathyroidectomy'],
-            ],
-            'dialysis' => [
-                'description_keywords' => ['dialysis', 'hemodialysis', 'peritoneal dialysis', 'arteriovenous fistula', 'dialysis catheter'],
-            ],
-            'glomerular-disease' => [
-                'description_keywords' => ['renal biopsy', 'glomerular'],
-            ],
-            'acute-kidney-injury' => [
-                'description_keywords' => ['continuous renal replacement', 'hemofiltration'],
-            ],
-            'chronic-kidney-disease' => [
-                'description_keywords' => ['kidney transplant', 'nephrostomy'],
-            ],
+
+            // ── ONCOLOGIA (antes das especialidades GI/pulmonares para não ser absorvida pelos prefixos gerais) ──
             'breast-cancer' => [
-                'description_keywords' => ['mastectomy', 'lumpectomy', 'sentinel lymph node', 'breast lesion'],
+                'code_prefixes' => ['DM'],               // Radioterapia da mama
+                'description_keywords' => ['mastectomia', 'tumorectomia', 'biópsia da mama', 'linfonodo sentinela'],
             ],
             'lung-cancer' => [
-                'description_keywords' => ['lobectomy', 'pneumonectomy', 'segmentectomy lung', 'bronchus resection'],
+                'description_keywords' => ['lobectomia', 'pneumonectomia', 'segmentectomia', 'ressecção pulmonar', 'ressecção do brônquio'],
             ],
             'hematologic-malignancies' => [
-                'description_keywords' => ['bone marrow transplant', 'stem cell', 'leukapheresis'],
+                'code_prefixes' => ['30'],               // Administração de células estaminais/medula
+                'description_keywords' => ['transplante de medula óssea', 'transplante da medula', 'células estaminais', 'leucaferese'],
             ],
             'gastrointestinal-cancers' => [
-                'description_keywords' => ['gastrectomy', 'colectomy', 'hepatectomy', 'pancreatectomy', 'esophagectomy', 'abdominoperineal resection'],
+                'description_keywords' => ['ressecção abdomino-perineal', 'esofagogastrectomia', 'duodenopancreatectomia', 'gastrectomia total'],
             ],
             'palliative-oncology' => [
-                'description_keywords' => ['palliative'],
+                'description_keywords' => ['paliativo'],
             ],
+
+            // ── GASTROENTEROLOGIA / CIRURGIA DIGESTIVA ───────────────────
+            'inflammatory-bowel-disease' => [
+                'description_keywords' => ['ileostomia', 'proctocolectomia', 'reservatório ileal', 'anastomose ileoanal', 'bolsa ileal'],
+            ],
+            'upper-gi' => [
+                'description_keywords' => ['esofagectomia', 'gastrectomia', 'gastrostomia', 'esófago', 'estômago', 'duodeno', 'piloroplastia', 'fundoplicatura'],
+            ],
+            'pancreatic-disease' => [
+                'description_keywords' => ['pâncreas', 'pancreatectomia', 'pancreatoduo', 'ducto pancreático'],
+            ],
+            'liver-disease' => [
+                'description_keywords' => ['fígado', 'hepático', 'hepatectomia', 'transplante hepático', 'transplante de fígado'],
+            ],
+            'colorectal' => [
+                'description_keywords' => ['colectomia', 'colostomia', 'proctectomia', 'sigmoidectomia', 'anastomose colorrectal', 'cólon', 'reto'],
+            ],
+
+            // ── PNEUMOLOGIA ─────────────────────────────────────────────
+            'pleural-disease' => [
+                'description_keywords' => ['pleural', 'toracocentese', 'pleurodese', 'empiema'],
+            ],
+            'interstitial-lung-disease' => [
+                'description_keywords' => ['biópsia pulmonar', 'biópsia do pulmão', 'fibrose pulmonar'],
+            ],
+            'pulmonary-hypertension' => [
+                'description_keywords' => ['artéria pulmonar', 'tromboendarterectomia pulmonar'],
+            ],
+            'sleep-disorders' => [
+                'description_keywords' => ['traqueostomia', 'nervo hipoglosso', 'traqueotomia'],
+            ],
+            'obstructive-lung-disease' => [
+                'description_keywords' => ['brônquio', 'broncoscopia', 'redução do volume pulmonar', 'traqueobrônquico'],
+            ],
+
+            // ── ENDOCRINOLOGIA ───────────────────────────────────────────
+            'thyroid-disorders' => [
+                'description_keywords' => ['tiróide', 'tiroidectomia', 'tireoide'],
+            ],
+            'adrenal-disorders' => [
+                'description_keywords' => ['suprarrenal', 'adrenalectomia', 'glândula adrenal'],
+            ],
+            'pituitary-disorders' => [
+                'description_keywords' => ['hipófise', 'pituitária', 'hipofisectomia'],
+            ],
+            'metabolic-bone-disease' => [
+                'description_keywords' => ['paratiróide', 'paratiroidectomia', 'glândula paratiróide'],
+            ],
+            'diabetes' => [
+                'description_keywords' => ['ilhéus pancreáticos', 'bomba de insulina'],
+            ],
+
+            // ── NEFROLOGIA ──────────────────────────────────────────────
+            'dialysis' => [
+                'code_prefixes' => ['5A1D', '5A1C'],     // Hemodiálise e substituição renal extracorporal
+                'description_keywords' => ['hemodiálise', 'diálise peritoneal', 'fístula arteriovenosa', 'cateter de diálise'],
+            ],
+            'chronic-kidney-disease' => [
+                'description_keywords' => ['transplante de rim', 'transplante renal', 'nefrostomia', 'nefrectomia'],
+            ],
+            'acute-kidney-injury' => [
+                'description_keywords' => ['hemofiltração', 'substituição renal contínua'],
+            ],
+            'glomerular-disease' => [
+                'description_keywords' => ['biópsia renal', 'biópsia do rim'],
+            ],
+
+            // ── PSIQUIATRIA ─────────────────────────────────────────────
             'mood-disorders' => [
-                'description_keywords' => ['electroconvulsive therapy'],
+                'code_prefixes' => ['GZ'],               // Saúde mental (inclui eletroconvulsivoterapia)
             ],
             'psychotic-disorders' => [
-                'description_keywords' => ['electroconvulsive therapy'],
+                'description_keywords' => ['eletroconvulsivoterapia', 'terapia electroconvulsiva'],
             ],
             'addiction-psychiatry' => [
-                'description_keywords' => ['detoxification', 'substance abuse'],
+                'code_prefixes' => ['HZ'],               // Tratamento de abuso de substâncias
+                'description_keywords' => ['desintoxicação'],
             ],
+
+            // ── CIRURGIA GERAL ──────────────────────────────────────────
             'hernia-surgery' => [
-                'description_keywords' => ['hernia repair'],
+                'description_keywords' => ['hérnia'],
             ],
             'thyroid-and-parathyroid-surgery' => [
-                'description_keywords' => ['thyroidectomy', 'parathyroidectomy'],
+                'description_keywords' => ['tiroidectomia total', 'tiroidectomia subtotal', 'paratiroidectomia'],
             ],
             'breast-surgery' => [
-                'description_keywords' => ['breast excision', 'breast reconstruction'],
+                'description_keywords' => ['excisão da mama', 'reconstrução mamária', 'reconstrução da mama'],
             ],
             'abdominal-surgery' => [
-                'description_keywords' => ['appendectomy', 'cholecystectomy', 'laparotomy', 'small intestine', 'large intestine'],
+                'description_keywords' => ['apendicectomia', 'colecistectomia', 'laparotomia', 'intestino delgado', 'intestino grosso'],
             ],
             'minimally-invasive-surgery' => [
-                'description_keywords' => ['laparoscopic', 'percutaneous endoscopic', 'robotic assisted'],
+                'description_keywords' => ['laparoscópica', 'laparoscópio', 'endoscópica percutânea', 'assistido por robô', 'robótico'],
             ],
         ];
     }

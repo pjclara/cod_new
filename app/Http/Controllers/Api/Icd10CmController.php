@@ -14,8 +14,8 @@ class Icd10CmController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $codes = Icd10Cm::with('subspecialty.specialty')
-            ->when($request->filled('subspecialty_id'), fn ($q) => $q->where('subspecialty_id', $request->integer('subspecialty_id')))
-            ->when($request->filled('billable'), fn ($q) => $q->where('billable', filter_var($request->billable, FILTER_VALIDATE_BOOLEAN)))
+            ->where('billable', 1)
+            ->when($request->filled('subspecialty_id'), fn($q) => $q->where('subspecialty_id', $request->integer('subspecialty_id')))
             ->orderBy('code')
             ->paginate(50);
 

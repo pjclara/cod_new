@@ -44,7 +44,7 @@ export default function FavoritesPage() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Favoritos" />
-            <div className="flex flex-col gap-6 p-6">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div>
                     <h1 className="text-2xl font-bold">Favoritos</h1>
                     <p className="mt-1 text-sm text-muted-foreground">

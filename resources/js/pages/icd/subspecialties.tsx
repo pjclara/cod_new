@@ -41,7 +41,7 @@ export default function SubspecialtiesPage({ specialtyId }: Props) {
                         : 'Subespecialidades'
                 }
             />
-            <div className="flex flex-col gap-6 p-6">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div>
                     <h1 className="text-2xl font-bold">
                         {specialty?.name ?? '…'} — Subespecialidades

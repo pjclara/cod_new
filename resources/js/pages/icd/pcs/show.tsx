@@ -72,7 +72,7 @@ export default function Icd10PcsShowPage({ code }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={entry ? `${entry.code} — ${entry.description}` : 'ICD-10-PCS'} />
-            <div className="flex flex-col gap-6 p-6">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 {loading && (
                     <div className="space-y-3">
                         <div className="h-10 w-32 animate-pulse rounded bg-muted" />

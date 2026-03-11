@@ -14,6 +14,23 @@ use Inertia\Response;
 class IcdController extends Controller
 {
     /**
+     * App landing page — passes stats + canRegister flag.
+     */
+    public function welcome(): Response
+    {
+        $stats = Cache::remember('icd.stats', now()->addHour(), fn () => [
+            'cm'          => Icd10Cm::count(),
+            'pcs'         => Icd10Pcs::count(),
+            'specialties' => Specialty::count(),
+        ]);
+
+        return Inertia::render('welcome', [
+            'canRegister' => \Laravel\Fortify\Features::enabled(\Laravel\Fortify\Features::registration()),
+            'stats'       => $stats,
+        ]);
+    }
+
+    /**
      * ICD-10 home — passes pre-counted stats from cache.
      */
     public function index(): Response

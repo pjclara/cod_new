@@ -44,13 +44,19 @@ export default function Icd10CmListPage({ subspecialtyId }: Props) {
         }, 350);
     };
 
+    useEffect(() => {
+        const q = new URLSearchParams(window.location.search).get('q');
+        if (q) handleSearch(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const codes = searchResults ?? result?.data ?? [];
     const isSearchMode = Boolean(query.trim());
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="ICD-10-CM — Diagnósticos" />
-            <div className="flex flex-col gap-4 p-6">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 {/* Header */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -97,7 +103,6 @@ export default function Icd10CmListPage({ subspecialtyId }: Props) {
                                 <th className="hidden px-4 py-3 text-left font-medium md:table-cell">
                                     Subespecialidade
                                 </th>
-                                <th className="px-4 py-3 text-center font-medium">Faturável</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-sidebar-border/40 dark:divide-sidebar-border">
@@ -125,15 +130,7 @@ export default function Icd10CmListPage({ subspecialtyId }: Props) {
                                         <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
                                             {c.subspecialty?.name ?? '—'}
                                         </td>
-                                        <td className="px-4 py-3 text-center">
-                                            {c.billable ? (
-                                                <span className="inline-block rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                                                    Sim
-                                                </span>
-                                            ) : (
-                                                <span className="text-muted-foreground">—</span>
-                                            )}
-                                        </td>
+                                        
                                     </tr>
                                 ))}
 
