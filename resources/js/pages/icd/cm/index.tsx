@@ -159,70 +159,108 @@ export default function Icd10CmListPage({ subspecialtyId }: Props) {
 
                 {/* Table */}
                 <div className="overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                    <table className="w-full text-sm">
-                        <thead className="bg-muted/50">
-                            <tr>
-                                <th className="px-4 py-3 text-left font-medium">Código</th>
-                                <th className="px-4 py-3 text-left font-medium">Descrição</th>
-                                <th className="hidden px-4 py-3 text-left font-medium md:table-cell">
-                                    Subespecialidade
-                                </th>
+                    {/* Mobile cards — visible below sm */}
+                    <div className="sm:hidden divide-y divide-sidebar-border/40 dark:divide-sidebar-border">
+                        {loading && Array.from({ length: 6 }).map((_, i) => (
+                            <div key={i} className="p-4 space-y-2">
+                                <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+                                <div className="h-3 w-full animate-pulse rounded bg-muted" />
+                            </div>
+                        ))}
+                        {!loading && codes.length === 0 && (
+                            <p className="px-4 py-8 text-center text-sm text-muted-foreground">Nenhum resultado encontrado.</p>
+                        )}
+                        {!loading && codes.map((c) => (
+                            <div key={c.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                                <div className="min-w-0">
+                                    <Link href={`/icd/cm/${c.code}`} className="font-mono font-medium text-primary hover:underline">
+                                        {c.code}
+                                    </Link>
+                                    <p className="mt-0.5 text-sm leading-snug text-muted-foreground">{c.description}</p>
+                                    {c.subspecialty && (
+                                        <span className="mt-1 inline-block text-xs text-muted-foreground">{c.subspecialty.name}</span>
+                                    )}
+                                </div>
                                 {isAuthenticated && (
-                                    <th className="px-4 py-3 text-left font-medium">Ações</th>
-                                )}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-sidebar-border/40 dark:divide-sidebar-border">
-                            {loading &&
-                                Array.from({ length: 10 }).map((_, i) => (
-                                    <tr key={i}>
-                                        <td colSpan={isAuthenticated ? 4 : 3} className="px-4 py-3">
-                                            <div className="h-4 animate-pulse rounded bg-muted" />
-                                        </td>
-                                    </tr>
-                                ))}
-
-                            {!loading &&
-                                codes.map((c) => (
-                                    <tr key={c.id} className="transition hover:bg-accent/50">
-                                        <td className="px-4 py-3">
-                                            <Link
-                                                href={`/icd/cm/${c.code}`}
-                                                className="font-mono font-medium text-primary hover:underline"
-                                            >
-                                                {c.code}
-                                            </Link>
-                                        </td>
-                                        <td className="px-4 py-3 leading-snug">{c.description}</td>
-                                        <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
-                                            {c.subspecialty?.name ?? '—'}
-                                        </td>
-                                        {isAuthenticated && (
-                                            <td className="px-4 py-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openAssignModal(c)}
-                                                    className="rounded-md border border-sidebar-border/70 px-2.5 py-1 text-xs transition hover:bg-accent dark:border-sidebar-border"
-                                                >
-                                                    Associar
-                                                </button>
-                                            </td>
-                                        )}
-                                    </tr>
-                                ))}
-
-                            {!loading && codes.length === 0 && (
-                                <tr>
-                                    <td
-                                        colSpan={isAuthenticated ? 4 : 3}
-                                        className="px-4 py-8 text-center text-muted-foreground"
+                                    <button
+                                        type="button"
+                                        onClick={() => openAssignModal(c)}
+                                        className="shrink-0 rounded-md border border-sidebar-border/70 px-2.5 py-1 text-xs transition hover:bg-accent dark:border-sidebar-border"
                                     >
-                                        Nenhum resultado encontrado.
-                                    </td>
+                                        Associar
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop table — hidden below sm */}
+                    <div className="hidden sm:block overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead className="bg-muted/50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left font-medium">Código</th>
+                                    <th className="px-4 py-3 text-left font-medium">Descrição</th>
+                                    <th className="hidden px-4 py-3 text-left font-medium md:table-cell">
+                                        Subespecialidade
+                                    </th>
+                                    {isAuthenticated && (
+                                        <th className="px-4 py-3 text-left font-medium">Ações</th>
+                                    )}
                                 </tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-sidebar-border/40 dark:divide-sidebar-border">
+                                {loading &&
+                                    Array.from({ length: 10 }).map((_, i) => (
+                                        <tr key={i}>
+                                            <td colSpan={isAuthenticated ? 4 : 3} className="px-4 py-3">
+                                                <div className="h-4 animate-pulse rounded bg-muted" />
+                                            </td>
+                                        </tr>
+                                    ))}
+
+                                {!loading &&
+                                    codes.map((c) => (
+                                        <tr key={c.id} className="transition hover:bg-accent/50">
+                                            <td className="px-4 py-3">
+                                                <Link
+                                                    href={`/icd/cm/${c.code}`}
+                                                    className="font-mono font-medium text-primary hover:underline"
+                                                >
+                                                    {c.code}
+                                                </Link>
+                                            </td>
+                                            <td className="px-4 py-3 leading-snug">{c.description}</td>
+                                            <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
+                                                {c.subspecialty?.name ?? '—'}
+                                            </td>
+                                            {isAuthenticated && (
+                                                <td className="px-4 py-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openAssignModal(c)}
+                                                        className="rounded-md border border-sidebar-border/70 px-2.5 py-1 text-xs transition hover:bg-accent dark:border-sidebar-border"
+                                                    >
+                                                        Associar
+                                                    </button>
+                                                </td>
+                                            )}
+                                        </tr>
+                                    ))}
+
+                                {!loading && codes.length === 0 && (
+                                    <tr>
+                                        <td
+                                            colSpan={isAuthenticated ? 4 : 3}
+                                            className="px-4 py-8 text-center text-muted-foreground"
+                                        >
+                                            Nenhum resultado encontrado.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 {/* Pagination */}

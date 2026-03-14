@@ -121,49 +121,76 @@ export default function AdminUsersIndex({ users, search }: Props) {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <div className="overflow-x-auto">
+                        {/* Mobile cards — hidden on sm+ */}
+                        <div className="sm:hidden divide-y">
+                            {users.data.length === 0 && (
+                                <p className="px-4 py-8 text-center text-sm text-muted-foreground">Nenhum utilizador encontrado.</p>
+                            )}
+                            {users.data.map((user) => (
+                                <div key={user.id} className="flex items-start justify-between gap-3 px-4 py-3.5">
+                                    <div className="min-w-0">
+                                        <p className="truncate font-medium text-slate-900 dark:text-white">{user.name}</p>
+                                        <p className="mt-0.5 truncate text-xs text-muted-foreground">{user.email}</p>
+                                        <div className="mt-1.5 flex items-center gap-2">
+                                            {user.email_verified_at ? (
+                                                <Badge className="gap-1 border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400">
+                                                    <UserCheck className="h-3 w-3" />
+                                                    Verificado
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="outline" className="gap-1 text-muted-foreground">
+                                                    <UserX className="h-3 w-3" />
+                                                    Não verificado
+                                                </Badge>
+                                            )}
+                                            <span className="text-xs text-muted-foreground">
+                                                {new Date(user.created_at).toLocaleDateString('pt-PT')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex shrink-0 gap-1.5">
+                                        <Button variant="outline" size="sm" asChild>
+                                            <Link href={`/admin/users/${user.id}/edit`}>
+                                                <Pencil className="h-3.5 w-3.5" />
+                                            </Link>
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400"
+                                            onClick={() => confirmDelete(user)}
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Desktop table — hidden below sm */}
+                        <div className="hidden sm:block overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b bg-muted/30">
-                                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                            Nome
-                                        </th>
-                                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                            Email
-                                        </th>
-                                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                            Estado
-                                        </th>
-                                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                            Registado em
-                                        </th>
-                                        <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                            Ações
-                                        </th>
+                                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nome</th>
+                                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</th>
+                                        <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado</th>
+                                        <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground md:table-cell">Registado em</th>
+                                        <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
                                     {users.data.length === 0 && (
                                         <tr>
-                                            <td
-                                                colSpan={5}
-                                                className="px-5 py-10 text-center text-sm text-muted-foreground"
-                                            >
+                                            <td colSpan={5} className="px-5 py-10 text-center text-sm text-muted-foreground">
                                                 Nenhum utilizador encontrado.
                                             </td>
                                         </tr>
                                     )}
                                     {users.data.map((user) => (
-                                        <tr
-                                            key={user.id}
-                                            className="transition-colors hover:bg-muted/20"
-                                        >
-                                            <td className="px-5 py-3.5 font-medium text-slate-900 dark:text-white">
-                                                {user.name}
-                                            </td>
-                                            <td className="px-5 py-3.5 text-muted-foreground">
-                                                {user.email}
-                                            </td>
+                                        <tr key={user.id} className="transition-colors hover:bg-muted/20">
+                                            <td className="px-5 py-3.5 font-medium text-slate-900 dark:text-white">{user.name}</td>
+                                            <td className="px-5 py-3.5 text-muted-foreground">{user.email}</td>
                                             <td className="px-5 py-3.5">
                                                 {user.email_verified_at ? (
                                                     <Badge className="gap-1 border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400">
@@ -177,7 +204,7 @@ export default function AdminUsersIndex({ users, search }: Props) {
                                                     </Badge>
                                                 )}
                                             </td>
-                                            <td className="px-5 py-3.5 text-sm text-muted-foreground">
+                                            <td className="hidden px-5 py-3.5 text-sm text-muted-foreground md:table-cell">
                                                 {new Date(user.created_at).toLocaleDateString('pt-PT')}
                                             </td>
                                             <td className="px-5 py-3.5">
