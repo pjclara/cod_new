@@ -176,7 +176,7 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
                                 <Activity className="h-4 w-4 text-white" />
                             </div>
                             <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">
-                                Medicodex
+                                Medic@dex
                             </span>
                         </a>
                         <nav className="flex items-center gap-2">
@@ -186,14 +186,7 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
                             >
                                 Entrar
                             </a>
-                            {canRegister && (
-                                <a
-                                    href="/register"
-                                    className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700"
-                                >
-                                    Registar
-                                </a>
-                            )}
+
                         </nav>
                     </div>
                 </header>
@@ -535,7 +528,7 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
                 <footer className="border-t border-slate-200 bg-white py-6 dark:border-slate-800 dark:bg-slate-900">
                     <div className="mx-auto max-w-6xl px-4 sm:px-6">
                         <p className="text-center text-xs text-slate-400">
-                            © {new Date().getFullYear()} Medicodex — Classificação ICD-10-CM/PCS
+                            © {new Date().getFullYear()} Medic@dex — Classificação ICD-10-CM/PCS
                         </p>
                     </div>
                 </footer>
