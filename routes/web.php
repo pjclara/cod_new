@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Icd\IcdController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,3 +28,8 @@ Route::prefix('icd')->name('icd.')->controller(IcdController::class)->group(func
 });
 
 require __DIR__.'/settings.php';
+
+// ── Admin ─────────────────────────────────────────────────────────────────────
+Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+    Route::resource('users', UserController::class)->except(['show']);
+});

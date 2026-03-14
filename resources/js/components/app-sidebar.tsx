@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardList, FileText, FolderGit2, House, LayoutGrid, Star, Stethoscope } from 'lucide-react';
+import { BookOpen, ClipboardList, FileText, FolderGit2, House, LayoutGrid, Star, Stethoscope, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -33,6 +33,10 @@ const icdNavItemsBase: NavItem[] = [
 
 const favoritesNavItem: NavItem = { title: 'Favoritos', href: '/icd/favorites', icon: Star };
 
+const adminNavItems: NavItem[] = [
+    { title: 'Utilizadores', href: '/admin/users', icon: Users },
+];
+
 const footerNavItems: NavItem[] = [
 
 ];
@@ -62,6 +66,7 @@ export function AppSidebar() {
             <SidebarContent>
                 <NavMain items={mainNavItems} />
                 <NavMain label="ICD-10" items={icdNavItems} />
+                {isAuthenticated && <NavMain label="Administração" items={adminNavItems} />}
             </SidebarContent>
 
             <SidebarFooter>
