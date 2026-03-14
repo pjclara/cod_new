@@ -92,7 +92,7 @@ export default function Icd10PcsShowPage({ code }: Props) {
                                     {entry.description}
                                 </h1>
                             </div>
-                            {isAuthenticated ? (
+                            {isAuthenticated && (
                                 <button
                                     onClick={toggleFavorite}
                                     disabled={favLoading}
@@ -104,13 +104,6 @@ export default function Icd10PcsShowPage({ code }: Props) {
                                 >
                                     {favorite ? '★ Guardado' : '☆ Guardar'}
                                 </button>
-                            ) : (
-                                <Link
-                                    href="/login"
-                                    className="shrink-0 rounded-lg border border-sidebar-border/70 px-4 py-2 text-sm transition hover:bg-accent dark:border-sidebar-border"
-                                >
-                                    ☆ Guardar
-                                </Link>
                             )}
                         </div>
 

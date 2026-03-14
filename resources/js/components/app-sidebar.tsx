@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { BookOpen, ClipboardList, FileText, FolderGit2, House, LayoutGrid, Star, Stethoscope } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -24,19 +24,27 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
-const icdNavItems: NavItem[] = [
+const icdNavItemsBase: NavItem[] = [
     { title: 'Início ICD', href: '/icd', icon: House },
     { title: 'Especialidades', href: '/icd/specialties', icon: Stethoscope },
     { title: 'Diagnósticos (CM)', href: '/icd/cm', icon: FileText },
     { title: 'Procedimentos (PCS)', href: '/icd/pcs', icon: ClipboardList },
-    { title: 'Favoritos', href: '/icd/favorites', icon: Star },
 ];
+
+const favoritesNavItem: NavItem = { title: 'Favoritos', href: '/icd/favorites', icon: Star };
 
 const footerNavItems: NavItem[] = [
 
 ];
 
 export function AppSidebar() {
+    const { auth } = usePage().props as { auth: { user: unknown } };
+    const isAuthenticated = !!auth.user;
+
+    const icdNavItems = isAuthenticated
+        ? [...icdNavItemsBase, favoritesNavItem]
+        : icdNavItemsBase;
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>

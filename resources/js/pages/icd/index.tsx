@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -9,6 +9,8 @@ interface Props {
 }
 
 export default function IcdHomePage({ stats }: Props) {
+    const { auth } = usePage().props as { auth: { user: unknown } };
+    const isAuthenticated = !!auth.user;
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="ICD-10 — Nomenclatura" />
@@ -50,11 +52,13 @@ export default function IcdHomePage({ stats }: Props) {
                         title="Navegar por Especialidade"
                         desc="Explore códigos organizados por área clínica e subespecialidade"
                     />
-                    <QuickCard
-                        href="/icd/favorites"
-                        title="Favoritos"
-                        desc="Aceda rapidamente aos códigos ICD-10 que guardou"
-                    />
+                    {isAuthenticated && (
+                        <QuickCard
+                            href="/icd/favorites"
+                            title="Favoritos"
+                            desc="Aceda rapidamente aos códigos ICD-10 que guardou"
+                        />
+                    )}
                 </div>
             </div>
         </AppLayout>
