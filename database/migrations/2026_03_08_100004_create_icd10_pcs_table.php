@@ -13,7 +13,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('subspecialty_id')->nullable()->constrained()->onDelete('set null');
             $table->string('code', 7)->unique();
-            $table->string('description');
+            $table->text('description');
             $table->text('notes')->nullable();
             $table->timestamps();
 

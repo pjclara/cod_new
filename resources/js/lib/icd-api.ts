@@ -45,7 +45,7 @@ export const getSubspecialty = (id: number): Promise<Subspecialty> =>
 
 export const getIcd10Cm = (params?: {
     subspecialty_id?: number;
-    billable?: boolean;
+    valid?: boolean;
     page?: number;
 }): Promise<Paginated<Icd10Cm>> =>
     api.get<Paginated<Icd10Cm>>('/icd10-cm', { params }).then((r) => r.data);
@@ -73,6 +73,22 @@ export const getIcd10PcsStructure = (prefix = ''): Promise<Icd10PcsStructureNode
 
 export const searchIcd10Pcs = (q: string): Promise<Icd10Pcs[]> =>
     api.get<Envelope<Icd10Pcs[]>>('/icd10-pcs/search', { params: { q } }).then((r) => r.data.data);
+
+export const assignCmSubspecialty = (
+    cmCode: string,
+    subspecialtyId: number | null,
+): Promise<Icd10Cm> =>
+    api
+        .patch<Envelope<Icd10Cm>>(`/icd10-cm/${cmCode}/assign`, { subspecialty_id: subspecialtyId })
+        .then((r) => r.data.data);
+
+export const assignPcsSubspecialty = (
+    pcsCode: string,
+    subspecialtyId: number | null,
+): Promise<Icd10Pcs> =>
+    api
+        .patch<Envelope<Icd10Pcs>>(`/icd10-pcs/${pcsCode}/assign`, { subspecialty_id: subspecialtyId })
+        .then((r) => r.data.data);
 
 // ── Favorites ────────────────────────────────────────────────────────────────
 

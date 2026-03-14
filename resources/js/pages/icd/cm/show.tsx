@@ -81,12 +81,12 @@ export default function Icd10CmShowPage({ code }: Props) {
                                     </span>
                                     <span
                                         className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                            entry.billable
+                                            entry.valid
                                                 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                                                 : 'bg-muted text-muted-foreground'
                                         }`}
                                     >
-                                        {entry.billable ? 'Faturável' : 'Não faturável'}
+                                        {entry.valid ? 'Faturável' : 'Não faturável'}
                                     </span>
                                 </div>
                                 <h1 className="mt-2 text-xl font-semibold leading-snug">

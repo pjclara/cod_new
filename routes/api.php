@@ -28,6 +28,12 @@ Route::prefix('v1')->group(function () {
     Route::get('icd10-pcs/structure', [Icd10PcsController::class, 'structure'])->name('api.icd10pcs.structure');
     Route::get('icd10-pcs/{icd10Pcs}', [Icd10PcsController::class, 'show'])->name('api.icd10pcs.show');
 
+    // Assign subspecialty (auth required)
+    Route::middleware('auth:web')->group(function () {
+        Route::patch('icd10-cm/{icd10Cm}/assign', [Icd10CmController::class, 'assign'])->name('api.icd10cm.assign');
+        Route::patch('icd10-pcs/{icd10Pcs}/assign', [Icd10PcsController::class, 'assign'])->name('api.icd10pcs.assign');
+    });
+
     // Favorites (auth required)
     Route::middleware('auth:web')->group(function () {
         Route::apiResource('favorites', FavoriteController::class)->only(['index', 'store', 'destroy'])->names([

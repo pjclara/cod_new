@@ -13,9 +13,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('subspecialty_id')->nullable()->constrained()->onDelete('set null');
             $table->string('code', 10)->unique();
-            $table->string('description');
+            $table->text('description');
             $table->text('notes')->nullable();
-            $table->boolean('billable')->default(true);
+            $table->boolean('valid')->default(true);
             $table->timestamps();
 
             $table->index('code');

@@ -11,12 +11,12 @@ class Icd10Cm extends Model
 {
     protected $table = 'icd10_cm';
 
-    protected $fillable = ['subspecialty_id', 'code', 'description', 'notes', 'billable'];
+    protected $fillable = ['subspecialty_id', 'code', 'description', 'notes', 'valid'];
 
     protected function casts(): array
     {
         return [
-            'billable' => 'boolean',
+            'valid' => 'boolean',
         ];
     }
 
@@ -39,9 +39,9 @@ class Icd10Cm extends Model
 
     // ── Scopes ───────────────────────────────────────────────────────────
 
-    public function scopeBillable(Builder $query): Builder
+    public function scopeValid(Builder $query): Builder
     {
-        return $query->where('billable', true);
+        return $query->where('valid', true);
     }
 
     public function scopeSearch(Builder $query, string $term): Builder

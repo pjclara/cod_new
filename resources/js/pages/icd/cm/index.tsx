@@ -1,9 +1,10 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
-import { getIcd10Cm, searchIcd10Cm } from '@/lib/icd-api';
-import type { Icd10Cm, Paginated } from '@/types/icd';
+import { assignCmSubspecialty, getIcd10Cm, getSpecialties, getSubspecialties, searchIcd10Cm } from '@/lib/icd-api';
+import type { Icd10Cm, Paginated, Specialty, Subspecialty } from '@/types/icd';
 import type { BreadcrumbItem } from '@/types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'ICD-10', href: '/icd' },
@@ -15,12 +16,75 @@ interface Props {
 }
 
 export default function Icd10CmListPage({ subspecialtyId }: Props) {
+    const { auth } = usePage().props as { auth: { user: unknown } };
+    const isAuthenticated = !!auth.user;
+
     const [result, setResult] = useState<Paginated<Icd10Cm> | null>(null);
     const [searchResults, setSearchResults] = useState<Icd10Cm[] | null>(null);
     const [query, setQuery] = useState('');
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // ── Modal de associação a subespecialidade ──
+    const [assignTarget, setAssignTarget] = useState<Icd10Cm | null>(null);
+    const [specialties, setSpecialties] = useState<Specialty[]>([]);
+    const [selectedSpecialtyId, setSelectedSpecialtyId] = useState<number | ''>('');
+    const [subspecialties, setSubspecialties] = useState<Subspecialty[]>([]);
+    const [selectedSubspecialtyId, setSelectedSubspecialtyId] = useState<number | ''>('');
+    const [subspecialtiesLoading, setSubspecialtiesLoading] = useState(false);
+    const [assignLoading, setAssignLoading] = useState(false);
+    const [assignError, setAssignError] = useState<string | null>(null);
+
+    const openAssignModal = (code: Icd10Cm) => {
+        setAssignTarget(code);
+        setAssignError(null);
+        setSelectedSpecialtyId(code.subspecialty?.specialty?.id ?? '');
+        setSelectedSubspecialtyId(code.subspecialty_id ?? '');
+        setSubspecialties([]);
+        if (specialties.length === 0) {
+            getSpecialties().then(setSpecialties);
+        }
+        if (code.subspecialty?.specialty?.id) {
+            setSubspecialtiesLoading(true);
+            getSubspecialties(code.subspecialty.specialty.id)
+                .then(setSubspecialties)
+                .finally(() => setSubspecialtiesLoading(false));
+        }
+    };
+
+    const handleSpecialtyChange = (value: string) => {
+        const id = value === '' ? '' : Number(value);
+        setSelectedSpecialtyId(id);
+        setSelectedSubspecialtyId('');
+        setSubspecialties([]);
+        if (id !== '') {
+            setSubspecialtiesLoading(true);
+            getSubspecialties(id as number)
+                .then(setSubspecialties)
+                .finally(() => setSubspecialtiesLoading(false));
+        }
+    };
+
+    const handleAssignSubmit = () => {
+        if (!assignTarget) return;
+        setAssignLoading(true);
+        setAssignError(null);
+        const subId = selectedSubspecialtyId === '' ? null : Number(selectedSubspecialtyId);
+        assignCmSubspecialty(assignTarget.code, subId)
+            .then((updated) => {
+                setResult((prev) => {
+                    if (!prev) return prev;
+                    return { ...prev, data: prev.data.map((c) => (c.id === updated.id ? updated : c)) };
+                });
+                setSearchResults((prev) =>
+                    prev ? prev.map((c) => (c.id === updated.id ? updated : c)) : prev,
+                );
+                setAssignTarget(null);
+            })
+            .catch(() => setAssignError('Erro ao guardar. Verifique se tem sessão iniciada.'))
+            .finally(() => setAssignLoading(false));
+    };
 
     const loadPage = (p: number) => {
         setLoading(true);
@@ -103,13 +167,16 @@ export default function Icd10CmListPage({ subspecialtyId }: Props) {
                                 <th className="hidden px-4 py-3 text-left font-medium md:table-cell">
                                     Subespecialidade
                                 </th>
+                                {isAuthenticated && (
+                                    <th className="px-4 py-3 text-left font-medium">Ações</th>
+                                )}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-sidebar-border/40 dark:divide-sidebar-border">
                             {loading &&
                                 Array.from({ length: 10 }).map((_, i) => (
                                     <tr key={i}>
-                                        <td colSpan={4} className="px-4 py-3">
+                                        <td colSpan={isAuthenticated ? 4 : 3} className="px-4 py-3">
                                             <div className="h-4 animate-pulse rounded bg-muted" />
                                         </td>
                                     </tr>
@@ -130,14 +197,24 @@ export default function Icd10CmListPage({ subspecialtyId }: Props) {
                                         <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
                                             {c.subspecialty?.name ?? '—'}
                                         </td>
-                                        
+                                        {isAuthenticated && (
+                                            <td className="px-4 py-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openAssignModal(c)}
+                                                    className="rounded-md border border-sidebar-border/70 px-2.5 py-1 text-xs transition hover:bg-accent dark:border-sidebar-border"
+                                                >
+                                                    Associar
+                                                </button>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))}
 
                             {!loading && codes.length === 0 && (
                                 <tr>
                                     <td
-                                        colSpan={4}
+                                        colSpan={isAuthenticated ? 4 : 3}
                                         className="px-4 py-8 text-center text-muted-foreground"
                                     >
                                         Nenhum resultado encontrado.
@@ -178,11 +255,79 @@ export default function Icd10CmListPage({ subspecialtyId }: Props) {
                     </div>
                 )}
             </div>
+            {/* Modal — Associar CM a subespecialidade */}
+            <Dialog open={assignTarget !== null} onOpenChange={(open) => { if (!open) setAssignTarget(null); }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>
+                            Associar{' '}
+                            <span className="font-mono">{assignTarget?.code}</span>{' '}
+                            a subespecialidade
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <div className="flex flex-col gap-4 pt-2">
+                        <label className="flex flex-col gap-1.5">
+                            <span className="text-sm font-medium">Especialidade</span>
+                            <select
+                                value={selectedSpecialtyId}
+                                onChange={(e) => handleSpecialtyChange(e.target.value)}
+                                className="rounded-lg border border-sidebar-border/70 bg-background px-3 py-2 text-sm outline-none focus:border-primary dark:border-sidebar-border"
+                            >
+                                <option value="">— Sem especialidade —</option>
+                                {specialties.map((s) => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                            </select>
+                        </label>
+
+                        <label className="flex flex-col gap-1.5">
+                            <span className="text-sm font-medium">Subespecialidade</span>
+                            <select
+                                value={selectedSubspecialtyId}
+                                onChange={(e) =>
+                                    setSelectedSubspecialtyId(
+                                        e.target.value === '' ? '' : Number(e.target.value),
+                                    )
+                                }
+                                disabled={selectedSpecialtyId === '' || subspecialtiesLoading}
+                                className="rounded-lg border border-sidebar-border/70 bg-background px-3 py-2 text-sm outline-none focus:border-primary disabled:opacity-50 dark:border-sidebar-border"
+                            >
+                                <option value="">— Sem subespecialidade —</option>
+                                {subspecialties.map((sub) => (
+                                    <option key={sub.id} value={sub.id}>{sub.name}</option>
+                                ))}
+                            </select>
+                            {subspecialtiesLoading && (
+                                <span className="text-xs text-muted-foreground">A carregar…</span>
+                            )}
+                        </label>
+
+                        {assignError && (
+                            <p className="text-sm text-destructive">{assignError}</p>
+                        )}
+
+                        <div className="flex justify-end gap-2 pt-1">
+                            <button
+                                type="button"
+                                onClick={() => setAssignTarget(null)}
+                                disabled={assignLoading}
+                                className="rounded-lg border border-sidebar-border/70 px-4 py-2 text-sm transition hover:bg-accent disabled:opacity-50 dark:border-sidebar-border"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleAssignSubmit}
+                                disabled={assignLoading}
+                                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
+                            >
+                                {assignLoading ? 'A guardar…' : 'Guardar'}
+                            </button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
-}
-
-
-interface Props {
-    subspecialtyId?: number;
 }

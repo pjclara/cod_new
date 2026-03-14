@@ -15,7 +15,7 @@ class Icd10CmResource extends JsonResource
             'code'            => $this->code,
             'description'     => $this->description,
             'notes'           => $this->notes,
-            'billable'        => $this->billable,
+            'valid'           => $this->valid,
             'subspecialty'    => new SubspecialtyResource($this->whenLoaded('subspecialty')),
             'created_at'      => $this->created_at,
             'updated_at'      => $this->updated_at,

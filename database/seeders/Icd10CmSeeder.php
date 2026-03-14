@@ -74,7 +74,7 @@ class Icd10CmSeeder extends Seeder
             $batch[] = [
                 'code'            => $code,
                 'description'     => $description,
-                'billable'        => $valid === '1',
+                'valid'           => $valid === '1',
                 'subspecialty_id' => null,
                 'notes'           => null,
                 'created_at'      => $now,

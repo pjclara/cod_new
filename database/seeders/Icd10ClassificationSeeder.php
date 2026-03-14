@@ -32,14 +32,14 @@ class Icd10ClassificationSeeder extends Seeder
             'updated_at' => $now,
         ]);
 
-        $cmAssigned = $this->applyRules('icd10_cm', $subspecialtyIds, $this->cmRules(), $now);
-        $pcsAssigned = $this->applyRules('icd10_pcs', $subspecialtyIds, $this->pcsRules(), $now);
+        #$cmAssigned = $this->applyRules('icd10_cm', $subspecialtyIds, $this->cmRules(), $now);
+        #$pcsAssigned = $this->applyRules('icd10_pcs', $subspecialtyIds, $this->pcsRules(), $now);
 
-        $cmUnassigned = DB::table('icd10_cm')->whereNull('subspecialty_id')->count();
-        $pcsUnassigned = DB::table('icd10_pcs')->whereNull('subspecialty_id')->count();
+        #$cmUnassigned = DB::table('icd10_cm')->whereNull('subspecialty_id')->count();
+        #$pcsUnassigned = DB::table('icd10_pcs')->whereNull('subspecialty_id')->count();
 
-        $this->command?->info("ICD-10-CM classificados: {$cmAssigned} | por classificar: {$cmUnassigned}");
-        $this->command?->info("ICD-10-PCS classificados: {$pcsAssigned} | por classificar: {$pcsUnassigned}");
+        #$this->command?->info("ICD-10-CM classificados: {$cmAssigned} | por classificar: {$cmUnassigned}");
+        #$this->command?->info("ICD-10-PCS classificados: {$pcsAssigned} | por classificar: {$pcsUnassigned}");
     }
 
     private function applyRules(string $table, Collection $subspecialtyIds, array $rules, $now): int
@@ -52,6 +52,8 @@ class Icd10ClassificationSeeder extends Seeder
             if (! $subspecialtyId) {
                 continue;
             }
+
+
 
             $query = DB::table($table)
                 ->whereNull('subspecialty_id')
@@ -74,7 +76,7 @@ class Icd10ClassificationSeeder extends Seeder
 
         foreach ($rule['code_prefixes'] ?? [] as $prefix) {
             $hasCondition = true;
-            $builder->orWhere('code', 'like', $prefix.'%');
+            $builder->orWhere('code', 'like', $prefix . '%');
         }
 
         foreach ($rule['code_values'] ?? [] as $value) {
@@ -84,7 +86,7 @@ class Icd10ClassificationSeeder extends Seeder
 
         foreach ($rule['description_keywords'] ?? [] as $keyword) {
             $hasCondition = true;
-            $builder->orWhere('description', 'like', '%'.$keyword.'%');
+            $builder->orWhere('description', 'like', '%' . $keyword . '%');
         }
 
         if (! $hasCondition) {
@@ -287,13 +289,17 @@ class Icd10ClassificationSeeder extends Seeder
                 'code_prefixes' => ['D24', 'N60', 'N61', 'N62', 'N63', 'N64'],
                 'description_keywords' => ['breast', 'mama', 'mastit'],
             ],
-            'abdominal-surgery' => [
-                'code_prefixes' => ['K35', 'K36', 'K37', 'K80', 'K81', 'K82', 'K83', 'K65', 'K66'],
-                'description_keywords' => ['appendic', 'cholecyst', 'gallbladder', 'biliary', 'periton', 'abdominal'],
+            'colo-retal-surgery' => [
+                'code_prefixes' => ['K62', 'K63', 'K64'],
+                'description_keywords' => ['colon', 'cólon', 'rect', 'reto', 'sigmoid', 'anal', 'hemorrhoid', 'hemorroid'],
             ],
-            'minimally-invasive-surgery' => [
-                'code_prefixes' => ['Z98.8'],
-                'description_keywords' => ['laparosc', 'endoscop', 'robotic'],
+            'hepato-biliary-pancreatic-surgery' => [
+                'code_prefixes' => ['K22.2', 'K22.3', 'K22.4', 'K22.5', 'K22.6', 'K22.7', 'K22.8', 'K22.9', 'K23', 'K24', 'K25', 'K26'],
+                'description_keywords' => ['hepato', 'biliary', 'pancreatic', 'fígado', 'vesícula biliar', 'pâncreas'],
+            ],
+            'esofago-gastric-surgery' => [
+                'code_prefixes' => ['K20', 'K21', 'K22', 'K23', 'K24', 'K25', 'K26'],
+                'description_keywords' => ['esofag', 'oesoph', 'gástr', 'gastr'],
             ],
         ];
     }
@@ -460,20 +466,24 @@ class Icd10ClassificationSeeder extends Seeder
 
             // ── CIRURGIA GERAL ──────────────────────────────────────────
             'hernia-surgery' => [
-                'description_keywords' => ['hérnia'],
-            ],
-            'thyroid-and-parathyroid-surgery' => [
-                'description_keywords' => ['tiroidectomia total', 'tiroidectomia subtotal', 'paratiroidectomia'],
+                'description_keywords' => ['hernia', 'hérnia', 'eventração'],
             ],
             'breast-surgery' => [
-                'description_keywords' => ['excisão da mama', 'reconstrução mamária', 'reconstrução da mama'],
+                'description_keywords' => ['mastopexia', 'mamoplastia', 'reconstrução mamária'],
             ],
-            'abdominal-surgery' => [
-                'description_keywords' => ['apendicectomia', 'colecistectomia', 'laparotomia', 'intestino delgado', 'intestino grosso'],
+            'thyroid-and-parathyroid-surgery' => [
+                'description_keywords' => ['bócio', 'goiter', 'paratiróide', 'paratiroidectomia'],
             ],
-            'minimally-invasive-surgery' => [
-                'description_keywords' => ['laparoscópica', 'laparoscópio', 'endoscópica percutânea', 'assistido por robô', 'robótico'],
+            'colo-retal-surgery' => [
+                'description_keywords' => ['hemorrhoidectomia', 'fissurectomia', 'fistulectomia anal'],
             ],
+            'hepato-biliary-pancreatic-surgery' => [
+                'description_keywords' => ['Sistema Hepatobiliar e Pâncreas', 'colecistostomia', 'Vesicula biliar', 'pancreatectomia'],
+            ],
+            'esofago-gastric-surgery' => [
+                'description_keywords' => ['fundoplicatura', 'gastrectomia', 'gastrostomia', 'esofagectomia'],
+            ],
+
         ];
     }
 }

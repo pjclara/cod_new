@@ -12,7 +12,7 @@ function cmCode(): Icd10Cm
     return Icd10Cm::create([
         'code'        => 'T99.9',
         'description' => 'Test CM code',
-        'billable'    => true,
+        'valid'       => true,
     ]);
 }
 
@@ -64,8 +64,8 @@ test('user sees only their own favorites', function () {
 
 test('favorites list is ordered newest first', function () {
     $user   = User::factory()->create();
-    $first  = Icd10Cm::create(['code' => 'A00.0', 'description' => 'First',  'billable' => true]);
-    $second = Icd10Cm::create(['code' => 'A00.1', 'description' => 'Second', 'billable' => true]);
+    $first  = Icd10Cm::create(['code' => 'A00.0', 'description' => 'First',  'valid' => true]);
+    $second = Icd10Cm::create(['code' => 'A00.1', 'description' => 'Second', 'valid' => true]);
 
     $fav1 = new Favorite(['user_id' => $user->id, 'favorable_id' => $first->id,  'favorable_type' => Icd10Cm::class]);
     $fav1->created_at = now()->subMinute();

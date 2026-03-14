@@ -75,11 +75,13 @@ class SubspecialtySeeder extends Seeder
                 ['slug' => 'geriatric-psychiatry', 'name' => 'Psiquiatria Geriátrica', 'description' => 'Saúde mental da pessoa idosa e comorbilidades associadas.'],
             ],
             'general-surgery' => [
-                ['slug' => 'abdominal-surgery', 'name' => 'Cirurgia Abdominal', 'description' => 'Procedimentos cirúrgicos do abdómen e vísceras associadas.'],
-                ['slug' => 'hernia-surgery', 'name' => 'Cirurgia da Hérnia', 'description' => 'Tratamento cirúrgico de hérnias da parede abdominal.'],
+                ['slug' => 'hernia-surgery', 'name' => 'Cirurgia da Parede Abdominal', 'description' => 'Tratamento cirúrgico de hérnias da parede abdominal.'],
                 ['slug' => 'breast-surgery', 'name' => 'Cirurgia da Mama', 'description' => 'Procedimentos cirúrgicos benignos e oncológicos da mama.'],
                 ['slug' => 'thyroid-and-parathyroid-surgery', 'name' => 'Cirurgia da Tiroide e Paratiroide', 'description' => 'Cirurgia endócrina cervical para doenças da tiroide e paratiroides.'],
-                ['slug' => 'minimally-invasive-surgery', 'name' => 'Cirurgia Minimamente Invasiva', 'description' => 'Técnicas laparoscópicas e outras abordagens menos invasivas.'],
+                ['slug' => 'colo-retal-surgery', 'name' => 'Cirurgia Colo-Retal', 'description' => 'Procedimentos cirúrgicos do cólon, reto e ânus.'],
+                ['slug' => 'hepato-biliary-pancreatic-surgery', 'name' => 'Cirurgia Hepato-Biliar e Pancreática', 'description' => 'Procedimentos cirúrgicos do fígado, vesícula biliar, vias biliares e pâncreas.'],
+                ['slug' => 'esofago-gastric-surgery', 'name' => 'Cirurgia Esofágica e Gástrica', 'description' => 'Procedimentos cirúrgicos do esófago e estômago.'],
+
             ],
         ];
 

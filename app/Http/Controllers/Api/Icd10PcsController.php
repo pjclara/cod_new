@@ -10,6 +10,7 @@ use App\Services\Icd10PcsStructureService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 
 class Icd10PcsController extends Controller
@@ -63,5 +64,19 @@ class Icd10PcsController extends Controller
             ->get();
 
         return Icd10PcsResource::collection($results);
+    }
+
+    public function assign(Request $request, Icd10Pcs $icd10Pcs): Icd10PcsResource
+    {
+        $validated = $request->validate([
+            'subspecialty_id' => ['nullable', 'integer', 'exists:subspecialties,id'],
+        ]);
+
+        $icd10Pcs->update(['subspecialty_id' => $validated['subspecialty_id']]);
+
+        Cache::forget('icd.stats');
+        Cache::forget('icd.catalog.welcome');
+
+        return new Icd10PcsResource($icd10Pcs->load('subspecialty.specialty'));
     }
 }

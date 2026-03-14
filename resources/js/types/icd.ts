@@ -23,7 +23,7 @@ export interface Icd10Cm {
     code: string;
     description: string;
     notes: string | null;
-    billable: boolean;
+    valid: boolean;
     subspecialty?: Subspecialty;
 }
 
