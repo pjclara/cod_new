@@ -28,25 +28,17 @@ import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Início',
+        title: 'Página inicial',
         href: '/',
         icon: House,
     },
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-
-    // wellcome page link
-];
-
-const icdNavItemsBase: NavItem[] = [
-    { title: 'Início ICD', href: '/icd', icon: House },
+    { title: 'ICD 10', href: '/icd', icon: House },
     { title: 'Especialidades', href: '/icd/specialties', icon: Stethoscope },
     { title: 'Diagnósticos (CM)', href: '/icd/cm', icon: FileText },
     { title: 'Procedimentos (PCS)', href: '/icd/pcs', icon: ClipboardList },
+    // wellcome page link
 ];
+
 
 const favoritesNavItem: NavItem = {
     title: 'Favoritos',
@@ -65,8 +57,8 @@ export function AppSidebar() {
     const isAuthenticated = !!auth.user;
 
     const icdNavItems = isAuthenticated
-        ? [...icdNavItemsBase, favoritesNavItem]
-        : icdNavItemsBase;
+        ? [ favoritesNavItem]
+        : [];
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -84,7 +76,6 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
-                <NavMain label="ICD-10" items={icdNavItems} />
                 {isAuthenticated && (
                     <NavMain label="Administração" items={adminNavItems} />
                 )}
