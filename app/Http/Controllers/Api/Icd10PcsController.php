@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\SearchRequest;
 use App\Http\Resources\Icd10PcsResource;
 use App\Models\Icd10Pcs;
-use App\Services\Icd10PcsStructureService;
 use Illuminate\Http\JsonResponse;
+use App\Services\Icd10PcsStructureService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Cache;
@@ -78,5 +78,22 @@ class Icd10PcsController extends Controller
         Cache::forget('icd.catalog.welcome');
 
         return new Icd10PcsResource($icd10Pcs->load('subspecialty.specialty'));
+    }
+
+    public function bulkAssign(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $validated = $request->validate([
+            'codes'           => ['required', 'array', 'min:1', 'max:200'],
+            'codes.*'         => ['required', 'string', 'exists:icd10_pcs,code'],
+            'subspecialty_id' => ['nullable', 'integer', 'exists:subspecialties,id'],
+        ]);
+
+        Icd10Pcs::whereIn('code', $validated['codes'])
+            ->update(['subspecialty_id' => $validated['subspecialty_id']]);
+
+        Cache::forget('icd.stats');
+        Cache::forget('icd.catalog.welcome');
+
+        return response()->json(['updated' => count($validated['codes'])]);
     }
 }

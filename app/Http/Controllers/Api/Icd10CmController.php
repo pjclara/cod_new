@@ -15,7 +15,6 @@ class Icd10CmController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $codes = Icd10Cm::with('subspecialty.specialty')
-            ->where('valid', 1)
             ->when($request->filled('subspecialty_id'), fn($q) => $q->where('subspecialty_id', $request->integer('subspecialty_id')))
             ->orderBy('code')
             ->paginate(50);
@@ -57,5 +56,22 @@ class Icd10CmController extends Controller
         Cache::forget('icd.catalog.welcome');
 
         return new Icd10CmResource($icd10Cm->load('subspecialty.specialty'));
+    }
+
+    public function bulkAssign(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $validated = $request->validate([
+            'codes'           => ['required', 'array', 'min:1', 'max:200'],
+            'codes.*'         => ['required', 'string', 'exists:icd10_cm,code'],
+            'subspecialty_id' => ['nullable', 'integer', 'exists:subspecialties,id'],
+        ]);
+
+        Icd10Cm::whereIn('code', $validated['codes'])
+            ->update(['subspecialty_id' => $validated['subspecialty_id']]);
+
+        Cache::forget('icd.stats');
+        Cache::forget('icd.catalog.welcome');
+
+        return response()->json(['updated' => count($validated['codes'])]);
     }
 }

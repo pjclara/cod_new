@@ -13,6 +13,11 @@ class Icd10Cm extends Model
 
     protected $fillable = ['subspecialty_id', 'code', 'description', 'notes', 'valid'];
 
+    protected static function booted(): void
+    {
+        static::addGlobalScope('valid', fn (Builder $q) => $q->where('valid', true));
+    }
+
     protected function casts(): array
     {
         return [

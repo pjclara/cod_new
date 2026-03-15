@@ -82,6 +82,14 @@ export const assignCmSubspecialty = (
         .patch<Envelope<Icd10Cm>>(`/icd10-cm/${cmCode}/assign`, { subspecialty_id: subspecialtyId })
         .then((r) => r.data.data);
 
+export const bulkAssignCmSubspecialty = (
+    codes: string[],
+    subspecialtyId: number | null,
+): Promise<{ updated: number }> =>
+    api
+        .patch<{ updated: number }>('/icd10-cm/bulk-assign', { codes, subspecialty_id: subspecialtyId })
+        .then((r) => r.data);
+
 export const assignPcsSubspecialty = (
     pcsCode: string,
     subspecialtyId: number | null,
@@ -89,6 +97,14 @@ export const assignPcsSubspecialty = (
     api
         .patch<Envelope<Icd10Pcs>>(`/icd10-pcs/${pcsCode}/assign`, { subspecialty_id: subspecialtyId })
         .then((r) => r.data.data);
+
+export const bulkAssignPcsSubspecialty = (
+    codes: string[],
+    subspecialtyId: number | null,
+): Promise<{ updated: number }> =>
+    api
+        .patch<{ updated: number }>('/icd10-pcs/bulk-assign', { codes, subspecialty_id: subspecialtyId })
+        .then((r) => r.data);
 
 // ── Favorites ────────────────────────────────────────────────────────────────
 

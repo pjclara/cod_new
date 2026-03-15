@@ -30,7 +30,9 @@ Route::prefix('v1')->group(function () {
 
     // Assign subspecialty (auth required)
     Route::middleware('auth:web')->group(function () {
+        Route::patch('icd10-cm/bulk-assign', [Icd10CmController::class, 'bulkAssign'])->name('api.icd10cm.bulkAssign');
         Route::patch('icd10-cm/{icd10Cm}/assign', [Icd10CmController::class, 'assign'])->name('api.icd10cm.assign');
+        Route::patch('icd10-pcs/bulk-assign', [Icd10PcsController::class, 'bulkAssign'])->name('api.icd10pcs.bulkAssign');
         Route::patch('icd10-pcs/{icd10Pcs}/assign', [Icd10PcsController::class, 'assign'])->name('api.icd10pcs.assign');
     });
 
