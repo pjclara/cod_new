@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import {
     Search,
     Activity,
@@ -8,9 +8,10 @@ import {
     ArrowRight,
     Loader2,
     Check,
+    Star,
 } from 'lucide-react';
-import { getIcd10Cm, getIcd10Pcs, searchIcd10Cm, searchIcd10Pcs } from '@/lib/icd-api';
-import type { Icd10Cm, Icd10Pcs } from '@/types/icd';
+import { getIcd10Cm, getIcd10Pcs, searchIcd10Cm, searchIcd10Pcs, getFavorites } from '@/lib/icd-api';
+import type { Icd10Cm, Icd10Pcs, Favorite } from '@/types/icd';
 import { useState, useEffect } from 'react';
 
 interface Props {
@@ -60,9 +61,28 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
             }
         >
     >({});
-    const [activeSpecialty, setActiveSpecialty] = useState(0);
     const [activeSubspecialty, setActiveSubspecialty] = useState(0);
     const [copiedCode, setCopiedCode] = useState<string | null>(null);
+    const [favorites, setFavorites] = useState<Favorite[]>([]);
+    const [favLoading, setFavLoading] = useState(false);
+    const [favError, setFavError] = useState<string | null>(null);
+
+    const { auth } = usePage<{ auth: { user: { id: number; name: string } | null } }>().props;
+    const isLoggedIn = !!auth?.user;
+
+    // -1 = tab de favoritos; 0+ = índice na lista catalog
+    const [activeTab, setActiveTab] = useState<number>(isLoggedIn ? -1 : 0);
+
+    useEffect(() => {
+        if (isLoggedIn && activeTab === -1) {
+            setFavLoading(true);
+            setFavError(null);
+            getFavorites()
+                .then(setFavorites)
+                .catch(() => setFavError('Não foi possível carregar os favoritos.'))
+                .finally(() => setFavLoading(false));
+        }
+    }, [isLoggedIn, activeTab]);
 
     function copyCode(code: string) {
         navigator.clipboard.writeText(code).then(() => {
@@ -71,8 +91,8 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
         });
     }
 
-    const activeSubs = catalog[activeSpecialty]?.subspecialties ?? [];
-    const activeSub = activeSubs[activeSubspecialty];
+    const activeSubs = catalog[activeTab >= 0 ? activeTab : 0]?.subspecialties ?? [];
+    const activeSub = activeTab >= 0 ? activeSubs[activeSubspecialty] : undefined;
     const activeSubData = activeSub ? subCodes[activeSub.id] : undefined;
 
     async function handleSearch(e: React.FormEvent) {
@@ -131,12 +151,13 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
         }
     }
 
-    // Auto‑load first subspecialty whenever active specialty changes
+    // Auto‑load first subspecialty whenever active specialty tab changes
     useEffect(() => {
-        const firstSub = catalog[activeSpecialty]?.subspecialties[0];
+        if (activeTab < 0) return;
+        const firstSub = catalog[activeTab]?.subspecialties[0];
         if (firstSub) loadSubCodes(firstSub.id, firstSub);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeSpecialty]);
+    }, [activeTab]);
 
     return (
         <>
@@ -155,13 +176,21 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
                             </span>
                         </a>
                         <nav className="flex items-center gap-2">
-                            <a
-                                href="/login"
-                                className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
-                            >
-                                Entrar
-                            </a>
-
+                            {isLoggedIn ? (
+                                <a
+                                    href="/dashboard"
+                                    className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700"
+                                >
+                                    Dashboard
+                                </a>
+                            ) : (
+                                <a
+                                    href="/login"
+                                    className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+                                >
+                                    Entrar
+                                </a>
+                            )}
                         </nav>
                     </div>
                 </header>
@@ -342,13 +371,39 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
                     {/* Tab bar */}
                     <div className="overflow-x-auto border-b border-slate-200 dark:border-slate-800">
                         <div className="flex min-w-max">
+                            {/* Tab Favoritos — apenas para utilizadores autenticados */}
+                            {isLoggedIn && (
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab(-1)}
+                                    className={`-mb-px flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition ${
+                                        activeTab === -1
+                                            ? 'border-amber-500 text-amber-600 dark:border-amber-400 dark:text-amber-400'
+                                            : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                                    }`}
+                                >
+                                    <Star className={`h-3.5 w-3.5 ${
+                                        activeTab === -1 ? 'fill-amber-400 text-amber-500' : 'text-slate-400'
+                                    }`} />
+                                    Favoritos
+                                    {favorites.length > 0 && (
+                                        <span className={`ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                                            activeTab === -1
+                                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
+                                                : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                        }`}>
+                                            {favorites.length}
+                                        </span>
+                                    )}
+                                </button>
+                            )}
                             {catalog.map((specialty, idx) => (
                                 <button
                                     key={specialty.id}
                                     type="button"
-                                    onClick={() => { setActiveSpecialty(idx); setActiveSubspecialty(0); }}
+                                    onClick={() => { setActiveTab(idx); setActiveSubspecialty(0); }}
                                     className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition ${
-                                        activeSpecialty === idx
+                                        activeTab === idx
                                             ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
                                             : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                                     }`}
@@ -356,7 +411,7 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
                                     {specialty.name}
                                     <span
                                         className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                                            activeSpecialty === idx
+                                            activeTab === idx
                                                 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
                                                 : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
                                         }`}
@@ -368,8 +423,100 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
                         </div>
                     </div>
 
+                    {/* Painel Favoritos */}
+                    {activeTab === -1 && (
+                        <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+                            {favLoading && (
+                                <div className="flex items-center gap-2 px-5 py-6 text-sm text-slate-400">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    A carregar favoritos…
+                                </div>
+                            )}
+                            {favError && (
+                                <p className="px-5 py-6 text-sm text-red-500">{favError}</p>
+                            )}
+                            {!favLoading && !favError && favorites.length === 0 && (
+                                <div className="flex flex-col items-center gap-2 px-5 py-10 text-center">
+                                    <Star className="h-8 w-8 text-slate-200 dark:text-slate-700" />
+                                    <p className="text-sm text-slate-400">Ainda não tem favoritos.</p>
+                                    <p className="text-xs text-slate-400">Adicione códigos favoritos nas páginas de detalhe.</p>
+                                </div>
+                            )}
+                            {!favLoading && !favError && favorites.length > 0 && (() => {
+                                const cmFavs = favorites.filter(
+                                    (f) => f.favorable_type?.includes('Icd10Cm') && f.favorable,
+                                ) as (Favorite & { favorable: Icd10Cm })[];
+                                const pcsFavs = favorites.filter(
+                                    (f) => f.favorable_type?.includes('Icd10Pcs') && f.favorable,
+                                ) as (Favorite & { favorable: Icd10Pcs })[];
+                                return (
+                                    <div className="grid gap-4 p-4 lg:grid-cols-2">
+                                        {/* CM */}
+                                        <div>
+                                            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                                Diagnósticos CM
+                                            </p>
+                                            {cmFavs.length > 0 ? (
+                                                <ul className="space-y-0.5">
+                                                    {cmFavs.map((f) => (
+                                                        <li key={f.id}>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => copyCode(f.favorable.code)}
+                                                                className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800"
+                                                            >
+                                                                <span className="mt-px shrink-0 rounded bg-blue-50 px-1.5 font-mono text-[10px] font-bold text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
+                                                                    {f.favorable.code}
+                                                                </span>
+                                                                <span className="flex-1 text-xs text-slate-600 dark:text-slate-400">
+                                                                    {f.favorable.description}
+                                                                </span>
+                                                                {copiedCode === f.favorable.code && <Check className="mt-px h-3 w-3 shrink-0 text-emerald-500" />}
+                                                            </button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-xs text-slate-400">Sem diagnósticos favoritos.</p>
+                                            )}
+                                        </div>
+                                        {/* PCS */}
+                                        <div>
+                                            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                                Procedimentos PCS
+                                            </p>
+                                            {pcsFavs.length > 0 ? (
+                                                <ul className="space-y-0.5">
+                                                    {pcsFavs.map((f) => (
+                                                        <li key={f.id}>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => copyCode(f.favorable.code)}
+                                                                className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800"
+                                                            >
+                                                                <span className="mt-px shrink-0 rounded bg-indigo-50 px-1.5 font-mono text-[10px] font-bold text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                                                    {f.favorable.code}
+                                                                </span>
+                                                                <span className="flex-1 text-xs text-slate-600 dark:text-slate-400">
+                                                                    {f.favorable.description}
+                                                                </span>
+                                                                {copiedCode === f.favorable.code && <Check className="mt-px h-3 w-3 shrink-0 text-emerald-500" />}
+                                                            </button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-xs text-slate-400">Sem procedimentos favoritos.</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    )}
+
                     {/* Subspecialty tabs + codes panel */}
-                    {activeSubs.length > 0 && (
+                    {activeTab >= 0 && activeSubs.length > 0 && (
                         <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
                             {/* Sub-tab bar */}
                             <div className="overflow-x-auto border-b border-slate-100 dark:border-slate-800">
