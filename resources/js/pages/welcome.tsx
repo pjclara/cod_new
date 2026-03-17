@@ -1,17 +1,17 @@
 import { Head } from '@inertiajs/react';
 import {
     Search,
-    ChevronDown,
     Activity,
     Stethoscope,
     Layers,
     BookOpen,
     ArrowRight,
     Loader2,
+    Check,
 } from 'lucide-react';
 import { getIcd10Cm, getIcd10Pcs, searchIcd10Cm, searchIcd10Pcs } from '@/lib/icd-api';
 import type { Icd10Cm, Icd10Pcs } from '@/types/icd';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface Props {
     canRegister: boolean;
@@ -60,6 +60,20 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
             }
         >
     >({});
+    const [activeSpecialty, setActiveSpecialty] = useState(0);
+    const [activeSubspecialty, setActiveSubspecialty] = useState(0);
+    const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+    function copyCode(code: string) {
+        navigator.clipboard.writeText(code).then(() => {
+            setCopiedCode(code);
+            setTimeout(() => setCopiedCode((prev) => (prev === code ? null : prev)), 1500);
+        });
+    }
+
+    const activeSubs = catalog[activeSpecialty]?.subspecialties ?? [];
+    const activeSub = activeSubs[activeSubspecialty];
+    const activeSubData = activeSub ? subCodes[activeSub.id] : undefined;
 
     async function handleSearch(e: React.FormEvent) {
         e.preventDefault();
@@ -90,78 +104,39 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
         }
     }
 
-    async function toggleSubspecialtyCodes(
-        subId: number,
-        counts: { cm_count: number; pcs_count: number },
-    ) {
-        const existing = subCodes[subId];
-
-        if (existing?.expanded) {
-            setSubCodes((prev) => ({
-                ...prev,
-                [subId]: { ...existing, expanded: false },
-            }));
-            return;
-        }
-
-        if (existing?.loaded) {
-            setSubCodes((prev) => ({
-                ...prev,
-                [subId]: { ...existing, expanded: true },
-            }));
-            return;
-        }
-
+    async function loadSubCodes(subId: number, counts: { cm_count: number; pcs_count: number }) {
+        if (subCodes[subId]?.loaded || subCodes[subId]?.loading) return;
         setSubCodes((prev) => ({
             ...prev,
-            [subId]: {
-                expanded: true,
-                loading: true,
-                loaded: false,
-                cm: [],
-                pcs: [],
-                error: null,
-            },
+            [subId]: { expanded: true, loading: true, loaded: false, cm: [], pcs: [], error: null },
         }));
-
         try {
-            const cmPromise =
+            const [cm, pcs] = await Promise.all([
                 counts.cm_count > 0
                     ? getIcd10Cm({ subspecialty_id: subId, page: 1 }).then((r) => r.data)
-                    : Promise.resolve([] as Icd10Cm[]);
-
-            const pcsPromise =
+                    : Promise.resolve([] as Icd10Cm[]),
                 counts.pcs_count > 0
                     ? getIcd10Pcs({ subspecialty_id: subId, page: 1 }).then((r) => r.data)
-                    : Promise.resolve([] as Icd10Pcs[]);
-
-            const [cm, pcs] = await Promise.all([cmPromise, pcsPromise]);
-
+                    : Promise.resolve([] as Icd10Pcs[]),
+            ]);
             setSubCodes((prev) => ({
                 ...prev,
-                [subId]: {
-                    expanded: true,
-                    loading: false,
-                    loaded: true,
-                    cm,
-                    pcs,
-                    error: null,
-                },
+                [subId]: { expanded: true, loading: false, loaded: true, cm, pcs, error: null },
             }));
         } catch {
             setSubCodes((prev) => ({
                 ...prev,
-                [subId]: {
-                    expanded: true,
-                    loading: false,
-                    loaded: false,
-                    cm: [],
-                    pcs: [],
-                    error: 'Erro ao carregar códigos desta subespecialidade.',
-                },
+                [subId]: { expanded: true, loading: false, loaded: false, cm: [], pcs: [], error: 'Erro ao carregar códigos desta subespecialidade.' },
             }));
         }
     }
+
+    // Auto‑load first subspecialty whenever active specialty changes
+    useEffect(() => {
+        const firstSub = catalog[activeSpecialty]?.subspecialties[0];
+        if (firstSub) loadSubCodes(firstSub.id, firstSub);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeSpecialty]);
 
     return (
         <>
@@ -193,23 +168,22 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
 
                 {/* ── Hero ───────────────────────────────────────────────────── */}
                 <section className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-                    <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
+                    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
                         <div className="mx-auto max-w-3xl text-center">
-                            <span className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400">
-                                <Stethoscope className="h-3.5 w-3.5" />
+                            <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400">
+                                <Stethoscope className="h-3 w-3" />
                                 Classificação Internacional de Doenças — 10.ª Revisão
                             </span>
-                            <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+                            <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
                                 Diagnósticos e Procedimentos
-                                <br />
-                                <span className="text-blue-600">num só lugar</span>
+                                <span className="ml-2 text-blue-600">num só lugar</span>
                             </h1>
-                            <p className="mt-4 text-base text-slate-500 dark:text-slate-400">
+                            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
                                 Pesquise e consulte códigos ICD-10-CM e ICD-10-PCS organizados por especialidade clínica.
                             </p>
 
                             {/* Stats strip */}
-                            <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm">
+                            <div className="mt-5 flex flex-wrap items-center justify-center gap-5 text-sm">
                                 <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
                                     <BookOpen className="h-4 w-4 text-blue-500" />
                                     <span className="font-semibold text-slate-900 dark:text-white">
@@ -239,7 +213,7 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
                         {/* Search */}
                         <form
                             onSubmit={handleSearch}
-                            className="mx-auto mt-10 max-w-3xl"
+                            className="mx-auto mt-6 max-w-2xl"
                         >
                             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md shadow-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:shadow-none">
                                 {/* Type toggle */}
@@ -296,7 +270,7 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
                         </form>
 
                         {/* Search results */}
-                        <div className="mx-auto mt-3 max-w-3xl">
+                        <div className="mx-auto mt-3 max-w-2xl">
                             {!searchLoading && searchError && (
                                 <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400">
                                     {searchError}
@@ -323,21 +297,21 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
                                             <ul className="divide-y divide-slate-50 dark:divide-slate-800">
                                                 {searchResults.map((item) => (
                                                     <li key={`${searchType}-${item.id}`}>
-                                                        <a
-                                                            href={
-                                                                searchType === 'cm'
-                                                                    ? `/icd/cm/${item.code}`
-                                                                    : `/icd/pcs/${item.code}`
-                                                            }
-                                                            className="flex items-center gap-3 px-4 py-3 transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => copyCode(item.code)}
+                                                            className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
                                                         >
                                                             <span className="shrink-0 rounded-md bg-blue-50 px-2 py-1 font-mono text-xs font-bold text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
                                                                 {item.code}
                                                             </span>
-                                                            <span className="truncate text-sm text-slate-700 dark:text-slate-300">
+                                                            <span className="flex-1 truncate text-sm text-slate-700 dark:text-slate-300">
                                                                 {item.description}
                                                             </span>
-                                                        </a>
+                                                            {copiedCode === item.code
+                                                                ? <Check className="ml-auto h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                                                                : <Search className="ml-auto h-3.5 w-3.5 shrink-0 text-slate-300 opacity-0 group-hover:opacity-100" />}
+                                                        </button>
                                                     </li>
                                                 ))}
                                             </ul>
@@ -351,7 +325,7 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
 
                 {/* ── Catalog ────────────────────────────────────────────────── */}
                 <section className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
-                    <div className="mb-6 flex items-center justify-between">
+                    <div className="mb-4 flex items-center justify-between">
                         <div>
                             <h2 className="text-base font-semibold text-slate-900 dark:text-white">
                                 Especialidades clínicas
@@ -365,163 +339,144 @@ export default function Welcome({ canRegister, stats, catalog }: Props) {
                         </span>
                     </div>
 
-                    <div className="space-y-2">
-                        {catalog.map((specialty) => (
-                            <details
-                                key={specialty.id}
-                                className="group overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
-                            >
-                                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 select-none">
-                                    <div className="flex min-w-0 items-center gap-3">
-                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40">
-                                            <Stethoscope className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-                                                {specialty.name}
-                                            </p>
-                                            <div className="mt-0.5 flex items-center gap-2">
-                                                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
-                                                    {specialty.cm_count.toLocaleString('pt-PT')} CM
-                                                </span>
-                                                <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400">
-                                                    {specialty.pcs_count.toLocaleString('pt-PT')} PCS
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <ChevronDown className="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 group-open:rotate-180" />
-                                </summary>
-
-                                <div className="border-t border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-                                    <div className="grid gap-2 sm:grid-cols-2">
-                                        {specialty.subspecialties.map((sub) => (
-                                            <div
-                                                key={sub.id}
-                                                className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
-                                            >
-                                                {/* Sub header */}
-                                                <div className="flex flex-col justify-between gap-2 px-4 py-3 sm:flex-row sm:items-center">
-                                                    <div className="min-w-0">
-                                                        <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
-                                                            {sub.name}
-                                                        </p>
-                                                        <div className="mt-1 flex items-center gap-1.5">
-                                                            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                                                                {sub.cm_count.toLocaleString('pt-PT')} CM
-                                                            </span>
-                                                            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                                                                {sub.pcs_count.toLocaleString('pt-PT')} PCS
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            toggleSubspecialtyCodes(sub.id, {
-                                                                cm_count: sub.cm_count,
-                                                                pcs_count: sub.pcs_count,
-                                                            })
-                                                        }
-                                                        className="shrink-0 rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white"
-                                                    >
-                                                        {subCodes[sub.id]?.expanded ? 'Ocultar' : 'Ver códigos'}
-                                                    </button>
-                                                </div>
-
-                                                {/* Expanded codes */}
-                                                {subCodes[sub.id]?.expanded && (
-                                                    <div className="border-t border-slate-100 bg-slate-50/60 p-3 dark:border-slate-800 dark:bg-slate-950/40">
-                                                        {subCodes[sub.id]?.loading && (
-                                                            <div className="flex items-center gap-2 py-2 text-xs text-slate-400">
-                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                                A carregar códigos…
-                                                            </div>
-                                                        )}
-
-                                                        {subCodes[sub.id]?.error && (
-                                                            <p className="text-xs text-red-500">
-                                                                {subCodes[sub.id]?.error}
-                                                            </p>
-                                                        )}
-
-                                                        {!subCodes[sub.id]?.loading &&
-                                                            !subCodes[sub.id]?.error && (
-                                                                <div className="grid gap-3 lg:grid-cols-2">
-                                                                    {/* CM */}
-                                                                    <div>
-                                                                        <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                                                                            Diagnósticos CM
-                                                                        </p>
-                                                                        {subCodes[sub.id]?.cm.length ? (
-                                                                            <ul className="max-h-52 space-y-1 overflow-auto">
-                                                                                {subCodes[sub.id]?.cm.map(
-                                                                                    (code) => (
-                                                                                        <li key={`cm-${code.id}`}>
-                                                                                            <a
-                                                                                                href={`/icd/cm/${code.code}`}
-                                                                                                className="flex items-start gap-2 rounded-md px-2 py-1.5 transition hover:bg-slate-100 dark:hover:bg-slate-800"
-                                                                                            >
-                                                                                                <span className="mt-px shrink-0 rounded bg-blue-50 px-1.5 font-mono text-[10px] font-bold text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
-                                                                                                    {code.code}
-                                                                                                </span>
-                                                                                                <span className="text-xs text-slate-600 dark:text-slate-400">
-                                                                                                    {code.description}
-                                                                                                </span>
-                                                                                            </a>
-                                                                                        </li>
-                                                                                    ),
-                                                                                )}
-                                                                            </ul>
-                                                                        ) : (
-                                                                            <p className="text-xs text-slate-400">
-                                                                                Sem códigos CM.
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* PCS */}
-                                                                    <div>
-                                                                        <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                                                                            Procedimentos PCS
-                                                                        </p>
-                                                                        {subCodes[sub.id]?.pcs.length ? (
-                                                                            <ul className="max-h-52 space-y-1 overflow-auto">
-                                                                                {subCodes[sub.id]?.pcs.map(
-                                                                                    (code) => (
-                                                                                        <li key={`pcs-${code.id}`}>
-                                                                                            <a
-                                                                                                href={`/icd/pcs/${code.code}`}
-                                                                                                className="flex items-start gap-2 rounded-md px-2 py-1.5 transition hover:bg-slate-100 dark:hover:bg-slate-800"
-                                                                                            >
-                                                                                                <span className="mt-px shrink-0 rounded bg-indigo-50 px-1.5 font-mono text-[10px] font-bold text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400">
-                                                                                                    {code.code}
-                                                                                                </span>
-                                                                                                <span className="text-xs text-slate-600 dark:text-slate-400">
-                                                                                                    {code.description}
-                                                                                                </span>
-                                                                                            </a>
-                                                                                        </li>
-                                                                                    ),
-                                                                                )}
-                                                                            </ul>
-                                                                        ) : (
-                                                                            <p className="text-xs text-slate-400">
-                                                                                Sem códigos PCS.
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </details>
-                        ))}
+                    {/* Tab bar */}
+                    <div className="overflow-x-auto border-b border-slate-200 dark:border-slate-800">
+                        <div className="flex min-w-max">
+                            {catalog.map((specialty, idx) => (
+                                <button
+                                    key={specialty.id}
+                                    type="button"
+                                    onClick={() => { setActiveSpecialty(idx); setActiveSubspecialty(0); }}
+                                    className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition ${
+                                        activeSpecialty === idx
+                                            ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
+                                            : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                                    }`}
+                                >
+                                    {specialty.name}
+                                    <span
+                                        className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                                            activeSpecialty === idx
+                                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
+                                                : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                        }`}
+                                    >
+                                        {specialty.cm_count + specialty.pcs_count}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
+
+                    {/* Subspecialty tabs + codes panel */}
+                    {activeSubs.length > 0 && (
+                        <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+                            {/* Sub-tab bar */}
+                            <div className="overflow-x-auto border-b border-slate-100 dark:border-slate-800">
+                                <div className="flex min-w-max px-2">
+                                    {activeSubs.map((sub, subIdx) => (
+                                        <button
+                                            key={sub.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setActiveSubspecialty(subIdx);
+                                                loadSubCodes(sub.id, sub);
+                                            }}
+                                            className={`-mb-px border-b-2 px-3 py-2.5 text-xs font-medium whitespace-nowrap transition ${
+                                                activeSubspecialty === subIdx
+                                                    ? 'border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                                                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                                            }`}
+                                        >
+                                            {sub.name}
+                                            <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                                                activeSubspecialty === subIdx
+                                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
+                                                    : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                            }`}>
+                                                {sub.cm_count + sub.pcs_count}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Codes panel */}
+                            <div className="p-4">
+                                {(!activeSubData || activeSubData.loading) && (
+                                    <div className="flex items-center gap-2 py-3 text-xs text-slate-400">
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        A carregar códigos…
+                                    </div>
+                                )}
+                                {activeSubData?.error && (
+                                    <p className="py-3 text-xs text-red-500">{activeSubData.error}</p>
+                                )}
+                                {activeSubData?.loaded && !activeSubData.error && (
+                                    <div className="grid gap-4 lg:grid-cols-2">
+                                        {/* CM */}
+                                        <div>
+                                            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                                Diagnósticos CM
+                                            </p>
+                                            {activeSubData.cm.length > 0 ? (
+                                                <ul className="max-h-64 space-y-0.5 overflow-auto">
+                                                    {activeSubData.cm.map((code) => (
+                                                        <li key={`cm-${code.id}`}>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => copyCode(code.code)}
+                                                                className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800"
+                                                            >
+                                                                <span className="mt-px shrink-0 rounded bg-blue-50 px-1.5 font-mono text-[10px] font-bold text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
+                                                                    {code.code}
+                                                                </span>
+                                                                <span className="flex-1 text-xs text-slate-600 dark:text-slate-400">
+                                                                    {code.description}
+                                                                </span>
+                                                                {copiedCode === code.code && <Check className="mt-px h-3 w-3 shrink-0 text-emerald-500" />}
+                                                            </button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-xs text-slate-400">Sem códigos CM.</p>
+                                            )}
+                                        </div>
+                                        {/* PCS */}
+                                        <div>
+                                            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                                Procedimentos PCS
+                                            </p>
+                                            {activeSubData.pcs.length > 0 ? (
+                                                <ul className="max-h-64 space-y-0.5 overflow-auto">
+                                                    {activeSubData.pcs.map((code) => (
+                                                        <li key={`pcs-${code.id}`}>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => copyCode(code.code)}
+                                                                className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800"
+                                                            >
+                                                                <span className="mt-px shrink-0 rounded bg-indigo-50 px-1.5 font-mono text-[10px] font-bold text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                                                    {code.code}
+                                                                </span>
+                                                                <span className="flex-1 text-xs text-slate-600 dark:text-slate-400">
+                                                                    {code.description}
+                                                                </span>
+                                                                {copiedCode === code.code && <Check className="mt-px h-3 w-3 shrink-0 text-emerald-500" />}
+                                                            </button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-xs text-slate-400">Sem códigos PCS.</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </section>
 
                 {/* ── Footer ─────────────────────────────────────────────────── */}
