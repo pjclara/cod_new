@@ -4,14 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Icd10Cm extends Model
 {
     protected $table = 'icd10_cm';
 
-    protected $fillable = ['subspecialty_id', 'code', 'description', 'notes', 'valid'];
+    protected $fillable = ['code', 'description', 'notes', 'valid'];
 
     protected static function booted(): void
     {
@@ -32,9 +32,9 @@ class Icd10Cm extends Model
 
     // ── Relationships ────────────────────────────────────────────────────
 
-    public function subspecialty(): BelongsTo
+    public function subspecialties(): BelongsToMany
     {
-        return $this->belongsTo(Subspecialty::class);
+        return $this->belongsToMany(Subspecialty::class, 'icd10_cm_subspecialty', 'icd10_cm_id', 'subspecialty_id');
     }
 
     public function favorites(): MorphMany

@@ -143,28 +143,31 @@ export default function Icd10PcsShowPage({ code }: Props) {
                                 </dt>
                                 <dd className="mt-1 font-mono text-sm">{entry.code}</dd>
                             </div>
-                            {entry.subspecialty && (
+                            {entry.subspecialties && entry.subspecialties.length > 0 && (
                                 <>
                                     <div>
                                         <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                            Subespecialidade
+                                            Subespecialidade{entry.subspecialties.length > 1 ? 's' : ''}
                                         </dt>
-                                        <dd className="mt-1 text-sm">
-                                            <Link
-                                                href={`/icd/pcs?subspecialty_id=${entry.subspecialty_id}`}
-                                                className="text-primary hover:underline"
-                                            >
-                                                {entry.subspecialty.name}
-                                            </Link>
+                                        <dd className="mt-1 flex flex-col gap-0.5 text-sm">
+                                            {entry.subspecialties.map((sub) => (
+                                                <Link
+                                                    key={sub.id}
+                                                    href={`/icd/pcs?subspecialty_id=${sub.id}`}
+                                                    className="text-primary hover:underline"
+                                                >
+                                                    {sub.name}
+                                                </Link>
+                                            ))}
                                         </dd>
                                     </div>
-                                    {entry.subspecialty.specialty && (
+                                    {entry.subspecialties.some((s) => s.specialty) && (
                                         <div>
                                             <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                                Especialidade
+                                                Especialidade{[...new Set(entry.subspecialties.filter((s) => s.specialty).map((s) => s.specialty!.name))].length > 1 ? 's' : ''}
                                             </dt>
                                             <dd className="mt-1 text-sm">
-                                                {entry.subspecialty.specialty.name}
+                                                {[...new Set(entry.subspecialties.filter((s) => s.specialty).map((s) => s.specialty!.name))].join(', ')}
                                             </dd>
                                         </div>
                                     )}

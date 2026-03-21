@@ -9,13 +9,14 @@ use App\Models\Icd10Cm;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class Icd10CmController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
-        $codes = Icd10Cm::with('subspecialty.specialty')
-            ->when($request->filled('subspecialty_id'), fn($q) => $q->where('subspecialty_id', $request->integer('subspecialty_id')))
+        $codes = Icd10Cm::with('subspecialties.specialty')
+            ->when($request->filled('subspecialty_id'), fn ($q) => $q->whereHas('subspecialties', fn ($q) => $q->where('subspecialties.id', $request->integer('subspecialty_id'))))
             ->orderBy('code')
             ->paginate(50);
 
@@ -25,7 +26,7 @@ class Icd10CmController extends Controller
     public function show(Icd10Cm $icd10Cm): Icd10CmResource
     {
         return new Icd10CmResource(
-            $icd10Cm->load('subspecialty.specialty'),
+            $icd10Cm->load('subspecialties.specialty'),
         );
     }
 
@@ -36,7 +37,7 @@ class Icd10CmController extends Controller
         $results = Icd10Cm::query()
             ->where('code', 'like', "{$q}%")
             ->orWhere('description', 'like', "%{$q}%")
-            ->with('subspecialty')
+            ->with('subspecialties')
             ->orderBy('code')
             ->limit(30)
             ->get();
@@ -47,27 +48,44 @@ class Icd10CmController extends Controller
     public function assign(Request $request, Icd10Cm $icd10Cm): Icd10CmResource
     {
         $validated = $request->validate([
-            'subspecialty_id' => ['nullable', 'integer', 'exists:subspecialties,id'],
+            'subspecialty_ids'   => ['present', 'array'],
+            'subspecialty_ids.*' => ['integer', 'exists:subspecialties,id'],
         ]);
 
-        $icd10Cm->update(['subspecialty_id' => $validated['subspecialty_id']]);
+        $icd10Cm->subspecialties()->sync($validated['subspecialty_ids']);
 
         Cache::forget('icd.stats');
         Cache::forget('icd.catalog.welcome');
 
-        return new Icd10CmResource($icd10Cm->load('subspecialty.specialty'));
+        return new Icd10CmResource($icd10Cm->load('subspecialties.specialty'));
     }
 
     public function bulkAssign(Request $request): \Illuminate\Http\JsonResponse
     {
         $validated = $request->validate([
-            'codes'           => ['required', 'array', 'min:1', 'max:200'],
-            'codes.*'         => ['required', 'string', 'exists:icd10_cm,code'],
-            'subspecialty_id' => ['nullable', 'integer', 'exists:subspecialties,id'],
+            'codes'              => ['required', 'array', 'min:1', 'max:200'],
+            'codes.*'            => ['required', 'string', 'exists:icd10_cm,code'],
+            'subspecialty_ids'   => ['present', 'array'],
+            'subspecialty_ids.*' => ['integer', 'exists:subspecialties,id'],
         ]);
 
-        Icd10Cm::whereIn('code', $validated['codes'])
-            ->update(['subspecialty_id' => $validated['subspecialty_id']]);
+        $cmIds = Icd10Cm::withoutGlobalScopes()->whereIn('code', $validated['codes'])->pluck('id');
+
+        if (!empty($validated['subspecialty_ids'])) {
+            $now     = now();
+            $inserts = [];
+            foreach ($cmIds as $cmId) {
+                foreach ($validated['subspecialty_ids'] as $subId) {
+                    $inserts[] = [
+                        'icd10_cm_id'     => $cmId,
+                        'subspecialty_id' => $subId,
+                        'created_at'      => $now,
+                        'updated_at'      => $now,
+                    ];
+                }
+            }
+            DB::table('icd10_cm_subspecialty')->insertOrIgnore($inserts);
+        }
 
         Cache::forget('icd.stats');
         Cache::forget('icd.catalog.welcome');

@@ -19,21 +19,19 @@ export interface Subspecialty {
 
 export interface Icd10Cm {
     id: number;
-    subspecialty_id: number | null;
     code: string;
     description: string;
     notes: string | null;
     valid: boolean;
-    subspecialty?: Subspecialty;
+    subspecialties: Subspecialty[];
 }
 
 export interface Icd10Pcs {
     id: number;
-    subspecialty_id: number | null;
     code: string;
     description: string;
     notes: string | null;
-    subspecialty?: Subspecialty;
+    subspecialties: Subspecialty[];
 }
 
 export interface Icd10PcsAxisOption {

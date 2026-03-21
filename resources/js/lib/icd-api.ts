@@ -76,34 +76,34 @@ export const searchIcd10Pcs = (q: string): Promise<Icd10Pcs[]> =>
 
 export const assignCmSubspecialty = (
     cmCode: string,
-    subspecialtyId: number | null,
+    subspecialtyIds: number[],
 ): Promise<Icd10Cm> =>
     api
-        .patch<Envelope<Icd10Cm>>(`/icd10-cm/${cmCode}/assign`, { subspecialty_id: subspecialtyId })
+        .patch<Envelope<Icd10Cm>>(`/icd10-cm/${cmCode}/assign`, { subspecialty_ids: subspecialtyIds })
         .then((r) => r.data.data);
 
 export const bulkAssignCmSubspecialty = (
     codes: string[],
-    subspecialtyId: number | null,
+    subspecialtyIds: number[],
 ): Promise<{ updated: number }> =>
     api
-        .patch<{ updated: number }>('/icd10-cm/bulk-assign', { codes, subspecialty_id: subspecialtyId })
+        .patch<{ updated: number }>('/icd10-cm/bulk-assign', { codes, subspecialty_ids: subspecialtyIds })
         .then((r) => r.data);
 
 export const assignPcsSubspecialty = (
     pcsCode: string,
-    subspecialtyId: number | null,
+    subspecialtyIds: number[],
 ): Promise<Icd10Pcs> =>
     api
-        .patch<Envelope<Icd10Pcs>>(`/icd10-pcs/${pcsCode}/assign`, { subspecialty_id: subspecialtyId })
+        .patch<Envelope<Icd10Pcs>>(`/icd10-pcs/${pcsCode}/assign`, { subspecialty_ids: subspecialtyIds })
         .then((r) => r.data.data);
 
 export const bulkAssignPcsSubspecialty = (
     codes: string[],
-    subspecialtyId: number | null,
+    subspecialtyIds: number[],
 ): Promise<{ updated: number }> =>
     api
-        .patch<{ updated: number }>('/icd10-pcs/bulk-assign', { codes, subspecialty_id: subspecialtyId })
+        .patch<{ updated: number }>('/icd10-pcs/bulk-assign', { codes, subspecialty_ids: subspecialtyIds })
         .then((r) => r.data);
 
 // ── Favorites ────────────────────────────────────────────────────────────────

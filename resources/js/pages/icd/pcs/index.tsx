@@ -18,6 +18,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { useFavorites } from '@/hooks/use-favorites';
+import { Star } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'ICD-10', href: '/icd' },
@@ -31,6 +33,7 @@ interface Props {
 export default function Icd10PcsListPage({ subspecialtyId }: Props) {
     const { auth } = usePage().props as { auth: { user: unknown } };
     const isAuthenticated = !!auth.user;
+    const { isFavorite, toggle: toggleFavorite, isPending: isFavPending } = useFavorites(isAuthenticated);
     const [result, setResult] = useState<Paginated<Icd10Pcs> | null>(null);
     const [searchResults, setSearchResults] = useState<Icd10Pcs[] | null>(null);
     const [structureNodes, setStructureNodes] = useState<
@@ -54,27 +57,24 @@ export default function Icd10PcsListPage({ subspecialtyId }: Props) {
     const [subspecialtiesLoading, setSubspecialtiesLoading] = useState(false);
     const [assignLoading, setAssignLoading] = useState(false);
     const [assignError, setAssignError] = useState<string | null>(null);
+    const [assignSelectedSubs, setAssignSelectedSubs] = useState<Subspecialty[]>([]);
 
     // ── Seleção múltipla ──
     const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
     const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
     const [bulkAssignLoading, setBulkAssignLoading] = useState(false);
     const [bulkAssignError, setBulkAssignError] = useState<string | null>(null);
+    const [bulkSelectedSubs, setBulkSelectedSubs] = useState<Subspecialty[]>([]);
 
     const openAssignModal = (code: Icd10Pcs) => {
         setAssignTarget(code);
         setAssignError(null);
-        setSelectedSpecialtyId(code.subspecialty?.specialty?.id ?? '');
-        setSelectedSubspecialtyId(code.subspecialty_id ?? '');
+        setAssignSelectedSubs(code.subspecialties ?? []);
+        setSelectedSpecialtyId('');
+        setSelectedSubspecialtyId('');
         setSubspecialties([]);
         if (specialties.length === 0) {
             getSpecialties().then(setSpecialties);
-        }
-        if (code.subspecialty?.specialty?.id) {
-            setSubspecialtiesLoading(true);
-            getSubspecialties(code.subspecialty.specialty.id)
-                .then(setSubspecialties)
-                .finally(() => setSubspecialtiesLoading(false));
         }
     };
 
@@ -95,8 +95,7 @@ export default function Icd10PcsListPage({ subspecialtyId }: Props) {
         if (!assignTarget) return;
         setAssignLoading(true);
         setAssignError(null);
-        const subId = selectedSubspecialtyId === '' ? null : Number(selectedSubspecialtyId);
-        assignPcsSubspecialty(assignTarget.code, subId)
+        assignPcsSubspecialty(assignTarget.code, assignSelectedSubs.map((s) => s.id))
             .then((updated) => {
                 setResult((prev) => {
                     if (!prev) return prev;
@@ -130,6 +129,7 @@ export default function Icd10PcsListPage({ subspecialtyId }: Props) {
 
     const openBulkAssign = () => {
         setBulkAssignError(null);
+        setBulkSelectedSubs([]);
         setSelectedSpecialtyId('');
         setSelectedSubspecialtyId('');
         setSubspecialties([]);
@@ -140,21 +140,15 @@ export default function Icd10PcsListPage({ subspecialtyId }: Props) {
     const handleBulkAssignSubmit = () => {
         setBulkAssignLoading(true);
         setBulkAssignError(null);
-        const subId = selectedSubspecialtyId === '' ? null : Number(selectedSubspecialtyId);
-        const specId = selectedSpecialtyId === '' ? null : Number(selectedSpecialtyId);
-        const subObj = subId ? (subspecialties.find((s) => s.id === subId) ?? null) : null;
-        const specObj = specId ? (specialties.find((s) => s.id === specId) ?? null) : null;
         const selCodes = Array.from(selectedCodes);
-        bulkAssignPcsSubspecialty(selCodes, subId)
+        const ids = bulkSelectedSubs.map((s) => s.id);
+        bulkAssignPcsSubspecialty(selCodes, ids)
             .then(() => {
-                const patch = (c: Icd10Pcs): Icd10Pcs =>
-                    selCodes.includes(c.code)
-                        ? {
-                              ...c,
-                              subspecialty_id: subId,
-                              subspecialty: subObj ? { ...subObj, specialty: specObj ?? undefined } : undefined,
-                          }
-                        : c;
+                const patch = (c: Icd10Pcs): Icd10Pcs => {
+                    if (!selCodes.includes(c.code)) return c;
+                    const newSubs = bulkSelectedSubs.filter((s) => !c.subspecialties.some((cs) => cs.id === s.id));
+                    return { ...c, subspecialties: [...c.subspecialties, ...newSubs] };
+                };
                 setResult((prev) => (prev ? { ...prev, data: prev.data.map(patch) } : prev));
                 setSearchResults((prev) => (prev ? prev.map(patch) : prev));
                 setSelectedCodes(new Set());
@@ -459,18 +453,31 @@ export default function Icd10PcsListPage({ subspecialtyId }: Props) {
                                                 {c.code}
                                             </Link>
                                             <p className="mt-0.5 text-sm leading-snug text-muted-foreground">{c.description}</p>
-                                            {c.subspecialty && (
-                                                <span className="mt-1 inline-block text-xs text-muted-foreground">{c.subspecialty.name}</span>
+                                            {c.subspecialties && c.subspecialties.length > 0 && (
+                                                <span className="mt-1 inline-block text-xs text-muted-foreground">
+                                                    {c.subspecialties.map((s) => s.name).join(', ')}
+                                                </span>
                                             )}
                                         </div>
                                         {isAuthenticated && (
-                                            <button
-                                                type="button"
-                                                onClick={() => openAssignModal(c)}
-                                                className="shrink-0 rounded-md border border-sidebar-border/70 px-2.5 py-1 text-xs transition hover:bg-accent dark:border-sidebar-border"
-                                            >
-                                                Associar
-                                            </button>
+                                            <div className="flex shrink-0 items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    disabled={isFavPending(c.id)}
+                                                    onClick={() => toggleFavorite(c.id, 'icd10_pcs')}
+                                                    className="rounded-md p-1.5 transition hover:bg-accent disabled:opacity-50"
+                                                    title={isFavorite(c.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                                                >
+                                                    <Star className={`h-4 w-4 ${ isFavorite(c.id) ? 'fill-amber-400 text-amber-500' : 'text-muted-foreground' }`} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openAssignModal(c)}
+                                                    className="shrink-0 rounded-md border border-sidebar-border/70 px-2.5 py-1 text-xs transition hover:bg-accent dark:border-sidebar-border"
+                                                >
+                                                    Associar
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
                                 ))}
@@ -527,17 +534,30 @@ export default function Icd10PcsListPage({ subspecialtyId }: Props) {
                                                 </td>
                                                 <td className="px-4 py-3 leading-snug">{c.description}</td>
                                                 <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
-                                                    {c.subspecialty?.name ?? '—'}
+                                                    {c.subspecialties && c.subspecialties.length > 0
+                                                        ? c.subspecialties.map((s) => s.name).join(', ')
+                                                        : '—'}
                                                 </td>
                                                 {isAuthenticated && (
                                                     <td className="px-4 py-3">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => openAssignModal(c)}
-                                                            className="rounded-md border border-sidebar-border/70 px-2.5 py-1 text-xs transition hover:bg-accent dark:border-sidebar-border"
-                                                        >
-                                                            Associar
-                                                        </button>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <button
+                                                                type="button"
+                                                                disabled={isFavPending(c.id)}
+                                                                onClick={() => toggleFavorite(c.id, 'icd10_pcs')}
+                                                                className="rounded-md p-1.5 transition hover:bg-accent disabled:opacity-50"
+                                                                title={isFavorite(c.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                                                            >
+                                                                <Star className={`h-4 w-4 ${ isFavorite(c.id) ? 'fill-amber-400 text-amber-500' : 'text-muted-foreground' }`} />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openAssignModal(c)}
+                                                                className="rounded-md border border-sidebar-border/70 px-2.5 py-1 text-xs transition hover:bg-accent dark:border-sidebar-border"
+                                                            >
+                                                                Associar
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 )}
                                             </tr>
@@ -601,59 +621,95 @@ export default function Icd10PcsListPage({ subspecialtyId }: Props) {
                 </div>
             </div>
 
-            {/* Modal — Associar PCS a subespecialidade */}
+            {/* Modal — Associar PCS a subespecialidades */}
             <Dialog open={assignTarget !== null} onOpenChange={(open) => { if (!open) setAssignTarget(null); }}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>
-                            Associar{' '}
-                            <span className="font-mono">{assignTarget?.code}</span>{' '}
-                            a subespecialidade
+                            Associar <span className="font-mono">{assignTarget?.code}</span> a subespecialidades
                         </DialogTitle>
                     </DialogHeader>
 
                     <div className="flex flex-col gap-4 pt-2">
-                        {/* Especialidade */}
-                        <label className="flex flex-col gap-1.5">
-                            <span className="text-sm font-medium">Especialidade</span>
-                            <select
-                                value={selectedSpecialtyId}
-                                onChange={(e) => handleSpecialtyChange(e.target.value)}
-                                className="rounded-lg border border-sidebar-border/70 bg-background px-3 py-2 text-sm outline-none focus:border-primary dark:border-sidebar-border"
-                            >
-                                <option value="">— Sem especialidade —</option>
-                                {specialties.map((s) => (
-                                    <option key={s.id} value={s.id}>
-                                        {s.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-
-                        {/* Subespecialidade */}
-                        <label className="flex flex-col gap-1.5">
-                            <span className="text-sm font-medium">Subespecialidade</span>
-                            <select
-                                value={selectedSubspecialtyId}
-                                onChange={(e) =>
-                                    setSelectedSubspecialtyId(
-                                        e.target.value === '' ? '' : Number(e.target.value),
-                                    )
-                                }
-                                disabled={selectedSpecialtyId === '' || subspecialtiesLoading}
-                                className="rounded-lg border border-sidebar-border/70 bg-background px-3 py-2 text-sm outline-none focus:border-primary disabled:opacity-50 dark:border-sidebar-border"
-                            >
-                                <option value="">— Sem subespecialidade —</option>
-                                {subspecialties.map((sub) => (
-                                    <option key={sub.id} value={sub.id}>
+                        {/* Subespecialidades actuais */}
+                        <div>
+                            <span className="text-sm font-medium">Subespecialidades associadas</span>
+                            <div className="mt-2 flex min-h-[32px] flex-wrap gap-1.5">
+                                {assignSelectedSubs.length === 0 && (
+                                    <span className="text-sm text-muted-foreground">Nenhuma</span>
+                                )}
+                                {assignSelectedSubs.map((sub) => (
+                                    <span
+                                        key={sub.id}
+                                        className="flex items-center gap-1 rounded-full border border-sidebar-border/70 bg-accent px-2.5 py-0.5 text-xs dark:border-sidebar-border"
+                                    >
                                         {sub.name}
-                                    </option>
+                                        <button
+                                            type="button"
+                                            onClick={() => setAssignSelectedSubs((prev) => prev.filter((s) => s.id !== sub.id))}
+                                            className="ml-0.5 opacity-60 hover:opacity-100"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
                                 ))}
-                            </select>
-                            {subspecialtiesLoading && (
-                                <span className="text-xs text-muted-foreground">A carregar…</span>
-                            )}
-                        </label>
+                            </div>
+                        </div>
+
+                        <hr className="border-sidebar-border/40 dark:border-sidebar-border" />
+
+                        {/* Adicionar nova subespecialidade */}
+                        <div className="flex flex-col gap-3">
+                            <span className="text-sm font-medium">Adicionar subespecialidade</span>
+                            <label className="flex flex-col gap-1.5">
+                                <span className="text-xs text-muted-foreground">Especialidade</span>
+                                <select
+                                    value={selectedSpecialtyId}
+                                    onChange={(e) => handleSpecialtyChange(e.target.value)}
+                                    className="rounded-lg border border-sidebar-border/70 bg-background px-3 py-2 text-sm outline-none focus:border-primary dark:border-sidebar-border"
+                                >
+                                    <option value="">— Selecionar especialidade —</option>
+                                    {specialties.map((s) => (
+                                        <option key={s.id} value={s.id}>{s.name}</option>
+                                    ))}
+                                </select>
+                            </label>
+                            <label className="flex flex-col gap-1.5">
+                                <span className="text-xs text-muted-foreground">Subespecialidade</span>
+                                <select
+                                    value={selectedSubspecialtyId}
+                                    onChange={(e) =>
+                                        setSelectedSubspecialtyId(
+                                            e.target.value === '' ? '' : Number(e.target.value),
+                                        )
+                                    }
+                                    disabled={selectedSpecialtyId === '' || subspecialtiesLoading}
+                                    className="rounded-lg border border-sidebar-border/70 bg-background px-3 py-2 text-sm outline-none focus:border-primary disabled:opacity-50 dark:border-sidebar-border"
+                                >
+                                    <option value="">— Selecionar subespecialidade —</option>
+                                    {subspecialties.map((sub) => (
+                                        <option key={sub.id} value={sub.id}>{sub.name}</option>
+                                    ))}
+                                </select>
+                                {subspecialtiesLoading && (
+                                    <span className="text-xs text-muted-foreground">A carregar…</span>
+                                )}
+                            </label>
+                            <button
+                                type="button"
+                                disabled={selectedSubspecialtyId === ''}
+                                onClick={() => {
+                                    const sub = subspecialties.find((s) => s.id === Number(selectedSubspecialtyId));
+                                    if (sub && !assignSelectedSubs.some((s) => s.id === sub.id)) {
+                                        setAssignSelectedSubs((prev) => [...prev, sub]);
+                                    }
+                                    setSelectedSubspecialtyId('');
+                                }}
+                                className="self-start rounded-lg border border-primary px-3 py-1.5 text-sm text-primary transition hover:bg-primary/10 disabled:opacity-40"
+                            >
+                                + Adicionar
+                            </button>
+                        </div>
 
                         {assignError && (
                             <p className="text-sm text-destructive">{assignError}</p>
@@ -686,46 +742,89 @@ export default function Icd10PcsListPage({ subspecialtyId }: Props) {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>
-                            Associar {selectedCodes.size} procedimento(s) a subespecialidade
+                            Associar {selectedCodes.size} procedimento(s) a subespecialidades
                         </DialogTitle>
                     </DialogHeader>
 
                     <div className="flex flex-col gap-4 pt-2">
-                        <label className="flex flex-col gap-1.5">
-                            <span className="text-sm font-medium">Especialidade</span>
-                            <select
-                                value={selectedSpecialtyId}
-                                onChange={(e) => handleSpecialtyChange(e.target.value)}
-                                className="rounded-lg border border-sidebar-border/70 bg-background px-3 py-2 text-sm outline-none focus:border-primary dark:border-sidebar-border"
-                            >
-                                <option value="">— Sem especialidade —</option>
-                                {specialties.map((s) => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
+                        {/* Subespecialidades a associar */}
+                        <div>
+                            <span className="text-sm font-medium">Subespecialidades a associar</span>
+                            <div className="mt-2 flex min-h-[32px] flex-wrap gap-1.5">
+                                {bulkSelectedSubs.length === 0 && (
+                                    <span className="text-sm text-muted-foreground">Nenhuma selecionada</span>
+                                )}
+                                {bulkSelectedSubs.map((sub) => (
+                                    <span
+                                        key={sub.id}
+                                        className="flex items-center gap-1 rounded-full border border-sidebar-border/70 bg-accent px-2.5 py-0.5 text-xs dark:border-sidebar-border"
+                                    >
+                                        {sub.name}
+                                        <button
+                                            type="button"
+                                            onClick={() => setBulkSelectedSubs((prev) => prev.filter((s) => s.id !== sub.id))}
+                                            className="ml-0.5 opacity-60 hover:opacity-100"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
                                 ))}
-                            </select>
-                        </label>
+                            </div>
+                        </div>
 
-                        <label className="flex flex-col gap-1.5">
-                            <span className="text-sm font-medium">Subespecialidade</span>
-                            <select
-                                value={selectedSubspecialtyId}
-                                onChange={(e) =>
-                                    setSelectedSubspecialtyId(
-                                        e.target.value === '' ? '' : Number(e.target.value),
-                                    )
-                                }
-                                disabled={selectedSpecialtyId === '' || subspecialtiesLoading}
-                                className="rounded-lg border border-sidebar-border/70 bg-background px-3 py-2 text-sm outline-none focus:border-primary disabled:opacity-50 dark:border-sidebar-border"
+                        <hr className="border-sidebar-border/40 dark:border-sidebar-border" />
+
+                        <div className="flex flex-col gap-3">
+                            <span className="text-sm font-medium">Adicionar subespecialidade</span>
+                            <label className="flex flex-col gap-1.5">
+                                <span className="text-xs text-muted-foreground">Especialidade</span>
+                                <select
+                                    value={selectedSpecialtyId}
+                                    onChange={(e) => handleSpecialtyChange(e.target.value)}
+                                    className="rounded-lg border border-sidebar-border/70 bg-background px-3 py-2 text-sm outline-none focus:border-primary dark:border-sidebar-border"
+                                >
+                                    <option value="">— Selecionar especialidade —</option>
+                                    {specialties.map((s) => (
+                                        <option key={s.id} value={s.id}>{s.name}</option>
+                                    ))}
+                                </select>
+                            </label>
+                            <label className="flex flex-col gap-1.5">
+                                <span className="text-xs text-muted-foreground">Subespecialidade</span>
+                                <select
+                                    value={selectedSubspecialtyId}
+                                    onChange={(e) =>
+                                        setSelectedSubspecialtyId(
+                                            e.target.value === '' ? '' : Number(e.target.value),
+                                        )
+                                    }
+                                    disabled={selectedSpecialtyId === '' || subspecialtiesLoading}
+                                    className="rounded-lg border border-sidebar-border/70 bg-background px-3 py-2 text-sm outline-none focus:border-primary disabled:opacity-50 dark:border-sidebar-border"
+                                >
+                                    <option value="">— Selecionar subespecialidade —</option>
+                                    {subspecialties.map((sub) => (
+                                        <option key={sub.id} value={sub.id}>{sub.name}</option>
+                                    ))}
+                                </select>
+                                {subspecialtiesLoading && (
+                                    <span className="text-xs text-muted-foreground">A carregar…</span>
+                                )}
+                            </label>
+                            <button
+                                type="button"
+                                disabled={selectedSubspecialtyId === ''}
+                                onClick={() => {
+                                    const sub = subspecialties.find((s) => s.id === Number(selectedSubspecialtyId));
+                                    if (sub && !bulkSelectedSubs.some((s) => s.id === sub.id)) {
+                                        setBulkSelectedSubs((prev) => [...prev, sub]);
+                                    }
+                                    setSelectedSubspecialtyId('');
+                                }}
+                                className="self-start rounded-lg border border-primary px-3 py-1.5 text-sm text-primary transition hover:bg-primary/10 disabled:opacity-40"
                             >
-                                <option value="">— Sem subespecialidade —</option>
-                                {subspecialties.map((sub) => (
-                                    <option key={sub.id} value={sub.id}>{sub.name}</option>
-                                ))}
-                            </select>
-                            {subspecialtiesLoading && (
-                                <span className="text-xs text-muted-foreground">A carregar…</span>
-                            )}
-                        </label>
+                                + Adicionar
+                            </button>
+                        </div>
 
                         {bulkAssignError && (
                             <p className="text-sm text-destructive">{bulkAssignError}</p>
@@ -743,7 +842,7 @@ export default function Icd10PcsListPage({ subspecialtyId }: Props) {
                             <button
                                 type="button"
                                 onClick={handleBulkAssignSubmit}
-                                disabled={bulkAssignLoading}
+                                disabled={bulkAssignLoading || bulkSelectedSubs.length === 0}
                                 className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
                             >
                                 {bulkAssignLoading ? 'A guardar…' : `Guardar (${selectedCodes.size})`}

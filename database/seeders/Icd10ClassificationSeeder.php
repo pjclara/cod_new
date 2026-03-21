@@ -22,15 +22,8 @@ class Icd10ClassificationSeeder extends Seeder
 
         $now = now();
 
-        DB::table('icd10_cm')->update([
-            'subspecialty_id' => null,
-            'updated_at' => $now,
-        ]);
-
-        DB::table('icd10_pcs')->update([
-            'subspecialty_id' => null,
-            'updated_at' => $now,
-        ]);
+        // subspecialty_id foi migrado para tabelas pivot (icd10_cm_subspecialty, icd10_pcs_subspecialty)
+        // As regras de classificação automática estão desactivadas — atribuição feita manualmente via UI
 
         #$cmAssigned = $this->applyRules('icd10_cm', $subspecialtyIds, $this->cmRules(), $now);
         #$pcsAssigned = $this->applyRules('icd10_pcs', $subspecialtyIds, $this->pcsRules(), $now);

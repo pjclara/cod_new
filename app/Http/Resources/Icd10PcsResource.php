@@ -10,14 +10,13 @@ class Icd10PcsResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'              => $this->id,
-            'subspecialty_id' => $this->subspecialty_id,
-            'code'            => $this->code,
-            'description'     => $this->description,
-            'notes'           => $this->notes,
-            'subspecialty'    => new SubspecialtyResource($this->whenLoaded('subspecialty')),
-            'created_at'      => $this->created_at,
-            'updated_at'      => $this->updated_at,
+            'id'             => $this->id,
+            'code'           => $this->code,
+            'description'    => $this->description,
+            'notes'          => $this->notes,
+            'subspecialties' => SubspecialtyResource::collection($this->whenLoaded('subspecialties')),
+            'created_at'     => $this->created_at,
+            'updated_at'     => $this->updated_at,
         ];
     }
 }

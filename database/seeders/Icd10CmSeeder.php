@@ -75,7 +75,6 @@ class Icd10CmSeeder extends Seeder
                 'code'            => $code,
                 'description'     => $description,
                 'valid'           => $valid === '1',
-                'subspecialty_id' => null,
                 'notes'           => null,
                 'created_at'      => $now,
                 'updated_at'      => $now,

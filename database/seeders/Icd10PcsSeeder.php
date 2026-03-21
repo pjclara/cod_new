@@ -26,7 +26,7 @@ class Icd10PcsSeeder extends Seeder
 
     public function run(): void
     {
-        ini_set('memory_limit', '1G');
+        ini_set('memory_limit', '2G');
 
         $path = base_path('doc/icd10pcs.xlsx');
 
@@ -76,7 +76,6 @@ class Icd10PcsSeeder extends Seeder
             $batch[] = [
                 'code'            => $code,
                 'description'     => $description,
-                'subspecialty_id' => null,
                 'notes'           => null,
                 'created_at'      => $now,
                 'updated_at'      => $now,

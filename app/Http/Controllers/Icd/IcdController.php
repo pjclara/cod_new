@@ -23,21 +23,14 @@ class IcdController extends Controller
             'cm'           => Icd10Cm::count(),
             'pcs'          => Icd10Pcs::count(),
             'specialties'  => Specialty::count(),
-            'cmUnassigned' => Icd10Cm::whereNull('subspecialty_id')->count(),
-            'pcsUnassigned' => Icd10Pcs::whereNull('subspecialty_id')->count(),
-            'cmSurgery' => Icd10Cm::whereIn(
-                'subspecialty_id',
-                Subspecialty::where('specialty_id', 10)->pluck('id')
-            )->count(),
-            'pcsSurgery' => Icd10Pcs::whereIn(
-                'subspecialty_id',
-                Subspecialty::where('specialty_id', 10)->pluck('id')
-            )->count(),
+            'cmUnassigned'  => Icd10Cm::doesntHave('subspecialties')->count(),
+            'pcsUnassigned' => Icd10Pcs::doesntHave('subspecialties')->count(),
+            'cmSurgery'  => Icd10Cm::whereHas('subspecialties', fn ($q) => $q->where('specialty_id', 10))->count(),
+            'pcsSurgery' => Icd10Pcs::whereHas('subspecialties', fn ($q) => $q->where('specialty_id', 10))->count(),
         ]);
 
         $catalog = Cache::remember('icd.catalog.welcome', now()->addHour(), function () {
             return Specialty::query()
-                ->withCount(['icd10Cm', 'icd10Pcs'])
                 ->with([
                     'subspecialties' => fn ($query) => $query
                         ->withCount(['icd10Cm', 'icd10Pcs'])
@@ -61,8 +54,8 @@ class IcdController extends Controller
                         'id' => $specialty->id,
                         'name' => $specialty->name,
                         'slug' => $specialty->slug,
-                        'cm_count' => (int) ($specialty->icd10_cm_count ?? 0),
-                        'pcs_count' => (int) ($specialty->icd10_pcs_count ?? 0),
+                        'cm_count' => $subspecialties->sum('cm_count'),
+                        'pcs_count' => $subspecialties->sum('pcs_count'),
                         'subspecialties' => $subspecialties,
                     ];
                 })
