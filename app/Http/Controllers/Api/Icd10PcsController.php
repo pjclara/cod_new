@@ -56,12 +56,17 @@ class Icd10PcsController extends Controller
     {
         $q = $request->validated('q');
 
+        // Se o utilizador incluir % usa o padrão literalmente; caso contrário aplica defaults
+        $hasWildcard = str_contains($q, '%');
+        $codePattern = $hasWildcard ? $q : "{$q}%";
+        $descPattern  = $hasWildcard ? $q : "%{$q}%";
+
         $results = Icd10Pcs::query()
-            ->where('code', 'like', "{$q}%")
-            ->orWhere('description', 'like', "%{$q}%")
+            ->where('code', 'like', $codePattern)
+            ->orWhere('description', 'like', $descPattern)
             ->with('subspecialties')
             ->orderBy('code')
-            ->limit(30)
+            ->limit(50)
             ->get();
 
         return Icd10PcsResource::collection($results);
